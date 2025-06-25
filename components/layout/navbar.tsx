@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../../lib/contexts/auth-context';
 import { Button } from '../ui/button';
@@ -61,6 +61,13 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
+              <Image
+                src={user?.profileImage || '/default-profile.png'}
+                alt="Profile Picture"
+                width={40}
+                height={40}
+                className="rounded-full"
+              />
                 <Link href="/profile" className="text-gray-700 hover:text-blue-600">
                   Welcome, {user?.firstName} {user?.lastName}
                 </Link>

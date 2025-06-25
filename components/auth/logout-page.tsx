@@ -38,7 +38,7 @@ export const LogoutPage: React.FC = () => {
         setCountdown(prev => {
           if (prev <= 1) {
             clearInterval(timer);
-            router.push('/');
+            setTimeout(() => router.push('/'), 0);
             return 0;
           }
           return prev - 1;
