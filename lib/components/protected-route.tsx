@@ -6,14 +6,14 @@ import { UserRole } from '../types';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRoles?: UserRole[];
+  allowedRoles?: UserRole[];
   fallback?: React.ReactNode;
   redirectTo?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
-  requiredRoles,
+  allowedRoles,
   fallback,
   redirectTo = '/login',
 }) => {
@@ -62,8 +62,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (requiredRoles && !hasAnyRole(requiredRoles)) {
-    console.log('User lacks required roles:', requiredRoles);
+  if (allowedRoles && !hasAnyRole(allowedRoles)) {
+    console.log('User lacks required roles:', allowedRoles);
     if (fallback) {
       return <>{fallback}</>;
     }
@@ -76,7 +76,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             You don't have the required permissions to access this page.
           </p>
           <p className="text-sm text-gray-500">
-            Required roles: {requiredRoles.join(', ')}
+            Required roles: {allowedRoles.join(', ')}
           </p>
         </div>
       </div>

@@ -165,6 +165,7 @@ export interface QuizQuestion {
   type: QuestionType;
   options?: string[];
   correctAnswer?: string;
+  correctAnswerExplanation?: string;
   points: number;
   order: number;
 }
@@ -176,6 +177,7 @@ export interface Quiz {
   timeLimit?: number;
   totalPoints: number;
   isPublished: boolean;
+  status: 'draft' | 'published' | 'archived';
   teacherId: number;
   teacher: Teacher;
   questions: QuizQuestion[];
@@ -209,6 +211,7 @@ export interface CreateQuizDto {
   description?: string;
   subject?: string;
   timeLimit?: number;
+  status?: 'draft' | 'published' | 'archived';
   questions: {
     question: string;
     questionType: string; // Backend expects 'questionType' not 'type'

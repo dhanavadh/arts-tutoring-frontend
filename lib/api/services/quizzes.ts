@@ -30,12 +30,20 @@ export class QuizzesService {
       params as Record<string, string>
     );
     
-    // Transform backend response { quizzes, total, page, totalPages } 
-    // to frontend expected format { data, total, page, limit, totalPages }
-    const backendData = response.data;
+    console.log('Raw getAllQuizzes response:', response);
+    
+    // Handle different response structures from backend
+    let backendData;
+    if (response.data) {
+      backendData = response.data;
+    } else {
+      backendData = response;
+    }
+    
+    console.log('Processed backendData:', backendData);
     
     return {
-      data: backendData.quizzes || [],
+      data: backendData.quizzes || backendData.data || [],
       total: backendData.total || 0,
       page: backendData.page || 1,
       limit: params?.limit || 10,
@@ -99,6 +107,16 @@ export class QuizzesService {
 
   async deleteQuiz(id: number): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`${this.endpoint}/${id}`);
+    return response.data;
+  }
+
+  async publishQuiz(id: number): Promise<Quiz> {
+    const response = await apiClient.patch<Quiz>(`${this.endpoint}/${id}/publish`);
+    return response.data;
+  }
+
+  async unpublishQuiz(id: number): Promise<Quiz> {
+    const response = await apiClient.patch<Quiz>(`${this.endpoint}/${id}/unpublish`);
     return response.data;
   }
 }

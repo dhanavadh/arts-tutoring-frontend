@@ -107,7 +107,7 @@ export const StudentDashboard: React.FC = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">Assigned Quizzes</h2>
               <Button size="sm" variant="outline">
-                <a href="/quizzes">View All</a>
+                <a href="/quizzes/assigned">View All</a>
               </Button>
             </div>
           </CardHeader>
@@ -171,7 +171,7 @@ export const StudentDashboard: React.FC = () => {
               </a>
             </Button>
             <Button className="h-20 flex-col" variant="outline">
-              <a href="/quizzes" className="flex flex-col items-center">
+              <a href="/quizzes/assigned" className="flex flex-col items-center">
                 <span className="text-2xl mb-2">✏️</span>
                 Take Quiz
               </a>
