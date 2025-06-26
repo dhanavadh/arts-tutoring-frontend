@@ -15,14 +15,33 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
+    // Get token from localStorage for Authorization header
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    
     const config: RequestInit = {
       ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
     };
+
+    // Debug logging for all requests
+    console.log('API Client Request:', { 
+      url, 
+      method: options.method || 'GET',
+      endpoint, 
+      options
+    });
+    
+    // Debug logging for authentication requests
+    if (endpoint.includes('/profile') || endpoint.includes('/auth')) {
+      console.log('API Client: Making authenticated request to:', url);
+      console.log('API Client: Request config:', config);
+      console.log('API Client: Document cookies:', document.cookie);
+    }
 
 
     try {
@@ -35,6 +54,12 @@ class ApiClient {
       });
 
       clearTimeout(timeoutId);
+
+      // Debug logging for Set-Cookie headers
+      if (endpoint.includes('/auth/login')) {
+        console.log('API Client: Response headers for login:', Object.fromEntries(response.headers.entries()));
+        console.log('API Client: Set-Cookie header:', response.headers.get('Set-Cookie'));
+      }
 
       if (!response.ok) {
         let errorData: ApiError;
@@ -98,8 +123,19 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string, params?: Record<string, string>): Promise<ApiResponse<T>> {
+    console.log('API get called with params:', params);
+    
+    // Debug all params in detail
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        console.log(`Param ${key}:`, value, 'type:', typeof value);
+      });
+    }
+    
     const searchParams = params ? new URLSearchParams(params).toString() : '';
     const url = searchParams ? `${endpoint}?${searchParams}` : endpoint;
+    console.log('API get constructed URL:', url);
+    console.log('API absolute URL:', `${this.baseURL}${url}`);
     return this.request<T>(url, { method: 'GET' });
   }
 
@@ -163,6 +199,26 @@ class ApiClient {
         throw error;
       }
       throw new Error('Upload failed');
+    }
+  }
+
+  // Direct API call for debugging
+  async directApiGet(url: string) {
+    console.log('Making direct API call to:', url);
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      const data = await response.json();
+      console.log('Direct API response:', JSON.stringify(data, null, 2));
+      return data;
+    } catch (error) {
+      console.error('Direct API call failed:', error);
+      throw error;
     }
   }
 }

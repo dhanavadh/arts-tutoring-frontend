@@ -13,12 +13,29 @@ export class AuthService {
 
   async login(credentials: LoginDto): Promise<AuthResponse> {
     console.log('Auth service: Making login request...');
-    const response = await apiClient.post<{ success: boolean; message: string; data: AuthResponse }>(
+    console.log('Auth service: Login URL:', `${this.endpoint}/login`);
+    console.log('Auth service: Credentials:', { email: credentials.email, password: '***' });
+    
+    const response = await apiClient.post<{ success: boolean; message: string; data: AuthResponse & { accessToken?: string } }>(
       `${this.endpoint}/login`,
       credentials
     );
     console.log('Auth service: Raw response:', response);
-    console.log('Auth service: Extracted data:', response.data.data);
+    console.log('Auth service: Response data:', response.data);
+    console.log('Auth service: Extracted user data:', response.data.data);
+    
+    // Check if we have the expected response structure
+    if (!response.data.data || !response.data.data.user) {
+      console.error('Auth service: Invalid response structure:', response.data);
+      throw new Error('Invalid login response structure');
+    }
+    
+    // Store token in localStorage temporarily for testing
+    if (response.data.data.accessToken) {
+      console.log('Auth service: Storing token in localStorage');
+      localStorage.setItem('access_token', response.data.data.accessToken);
+    }
+    
     return response.data.data;
   }
 
@@ -54,6 +71,10 @@ export class AuthService {
     const response = await apiClient.post<{ success: boolean; message: string }>(
       `${this.endpoint}/logout`
     );
+    
+    // Clear localStorage token
+    localStorage.removeItem('access_token');
+    
     return { message: response.data.message };
   }
 

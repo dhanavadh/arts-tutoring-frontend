@@ -18,18 +18,20 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   redirectTo = '/login',
 }) => {
   const { isAuthenticated, isLoading, hasAnyRole, user, checkAuth } = useAuth();
+  const [hasCheckedAuth, setHasCheckedAuth] = React.useState(false);
 
-  console.log('ProtectedRoute state:', { isAuthenticated, isLoading, user: user?.email || 'none' });
+  console.log('ProtectedRoute state:', { isAuthenticated, isLoading, user: user?.email || 'none', hasCheckedAuth });
 
   // Check for authentication when protected route is accessed
   useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
+    if (!isAuthenticated && !isLoading && !hasCheckedAuth) {
       console.log('ProtectedRoute: Checking for existing authentication...');
+      setHasCheckedAuth(true);
       checkAuth();
     }
-  }, [isAuthenticated, isLoading, checkAuth]);
+  }, [isAuthenticated, isLoading, checkAuth, hasCheckedAuth]);
 
-  if (isLoading) {
+  if (isLoading || (!isAuthenticated && !hasCheckedAuth)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>

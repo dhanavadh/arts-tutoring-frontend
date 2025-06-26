@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/contexts/auth-context';
 import { Button } from '../ui/button';
@@ -8,13 +8,44 @@ import { Input } from '../ui/input';
 import { Card, CardBody, CardHeader } from '../ui/card';
 
 export const LoginForm: React.FC = () => {
-  const [email, setEmail] = useState('teacher@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('testadmin@test.com');
+  const [password, setPassword] = useState('admin123');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      console.log('User already authenticated, redirecting to home...');
+      router.push('/');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <Card>
+            <CardBody>
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">Checking authentication...</span>
+              </div>
+            </CardBody>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render form if user is authenticated (will redirect)
+  if (isAuthenticated) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +57,20 @@ export const LoginForm: React.FC = () => {
     try {
       console.log('Calling login function...');
       await login(email, password);
-      console.log('Login successful, redirecting to dashboard...');
+      console.log('Login successful, checking cookies before redirect...');
+      
+      // Check cookies immediately after login
+      const cookiesAfterLogin = document.cookie;
+      console.log('Login form: Cookies after login:', cookiesAfterLogin);
+      console.log('Login form: Has access_token:', cookiesAfterLogin.includes('access_token'));
+      
+      // Wait a moment for any async cookie setting
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const cookiesAfterDelay = document.cookie;
+      console.log('Login form: Cookies after delay:', cookiesAfterDelay);
+      
+      console.log('Redirecting to dashboard...');
       router.push('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);

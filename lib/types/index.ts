@@ -82,16 +82,22 @@ export interface AuthResponse {
 }
 
 // Article types
+export type ArticleStatus = 'draft' | 'published' | 'archived';
+
 export interface Article {
   id: number;
   title: string;
+  slug: string;
   content: string;
-  summary?: string;
-  image?: string;
-  isPublished: boolean;
+  excerpt?: string;
+  featuredImage?: string;
+  status: ArticleStatus;
+  category?: string;
+  tags?: string[];
+  viewCount: number;
   publishedAt?: string;
-  authorId: number;
-  author: Teacher;
+  teacherId: number;
+  teacher: Teacher;
   createdAt: string;
   updatedAt: string;
 }
@@ -99,19 +105,25 @@ export interface Article {
 export interface CreateArticleDto {
   title: string;
   content: string;
-  summary?: string;
-  isPublished?: boolean;
+  excerpt?: string;
+  featuredImage?: string;
+  status?: ArticleStatus;
+  category?: string;
+  tags?: string[];
 }
 
 export interface UpdateArticleDto {
   title?: string;
   content?: string;
-  summary?: string;
-  isPublished?: boolean;
+  excerpt?: string;
+  featuredImage?: string;
+  status?: ArticleStatus;
+  category?: string;
+  tags?: string[];
 }
 
 export interface PublishArticleDto {
-  isPublished: boolean;
+  status: ArticleStatus;
 }
 
 // Booking types

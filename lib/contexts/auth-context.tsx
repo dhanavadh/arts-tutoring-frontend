@@ -42,23 +42,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('AuthContext: Loading user...');
       setIsLoading(true);
+      
+      // Check localStorage for token temporarily
+      const token = localStorage.getItem('access_token');
+      console.log('AuthContext: Has access_token in localStorage:', !!token);
+      
+      if (!token) {
+        console.log('AuthContext: No access_token in localStorage - user needs to login');
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('AuthContext: Found access_token in localStorage');
+      
       const userData = await authService.getProfile();
       console.log('AuthContext: User loaded successfully:', userData);
       setUser(userData);
     } catch (error) {
       console.log('AuthContext: Failed to load user:', error);
-      setUser(null);
+      
+      // Check if it's an auth error
+      if (error instanceof Error && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+        console.log('AuthContext: Authentication failed - clearing user state and invalid cookies');
+        
+        // Clear invalid access_token cookie
+        document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost';
+        document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        setUser(null);
+      } else {
+        console.log('AuthContext: Non-auth error:', error);
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
       console.log('AuthContext: Loading finished');
     }
   }, []);
 
-  // Check for existing session on mount without making API calls
+  // Check for existing session on mount
   useEffect(() => {
-    console.log('AuthContext: Initializing without auto-fetch');
-    setIsLoading(false);
-  }, []);
+    console.log('AuthContext: Initializing and checking for existing session');
+    console.log('AuthContext: Window available:', typeof window !== 'undefined');
+    console.log('AuthContext: localStorage available:', typeof window !== 'undefined' && !!window.localStorage);
+    if (typeof window !== 'undefined') {
+      console.log('AuthContext: Token in localStorage:', !!localStorage.getItem('access_token'));
+    }
+    loadUser();
+  }, [loadUser]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -68,7 +100,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(response.user);
       console.log('Auth context: User set successfully');
       
-      // Load the complete user profile after login
+      // Check localStorage immediately after login
+      const token = localStorage.getItem('access_token');
+      console.log('Auth context: Has access_token in localStorage after login:', !!token);
+      
+      // Force reload user profile to confirm authentication
       await loadUser();
     } catch (error) {
       console.error('Auth context: Login error:', error);
@@ -118,7 +154,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const checkAuth = async (): Promise<void> => {
+    console.log('CheckAuth: Starting authentication check...');
     await loadUser();
+    console.log('CheckAuth: Authentication check completed');
   };
 
   const value: AuthContextType = {

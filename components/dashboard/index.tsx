@@ -15,6 +15,21 @@ export const Dashboard: React.FC = () => {
   }
 
   if (!user) {
+    // Check if we have auth cookies but failed to load profile
+    const hasAuthCookie = typeof document !== 'undefined' && document.cookie.includes('access_token');
+    
+    if (hasAuthCookie) {
+      return (
+        <div className="text-center py-8">
+          <h2 className="text-xl font-semibold text-gray-900">Loading Profile...</h2>
+          <p className="text-gray-600">Please wait while we verify your authentication.</p>
+          <p className="text-sm text-gray-500 mt-2">
+            You appear to be logged in, but we're having trouble loading your profile.
+          </p>
+        </div>
+      );
+    }
+    
     return (
       <div className="text-center py-8">
         <h2 className="text-xl font-semibold text-gray-900">Access Denied</h2>

@@ -120,8 +120,8 @@ export const TeacherDashboard: React.FC = () => {
                   <div key={article.id} className="border-l-4 border-green-500 pl-4 py-2">
                     <div>
                       <p className="font-medium">{article.title}</p>
-                      <p className="text-sm text-gray-600">
-                        {article.isPublished ? 'Published' : 'Draft'}
+                      <p className="text-sm text-gray-600 capitalize">
+                        {article.status}
                       </p>
                       <p className="text-sm text-gray-500">
                         {new Date(article.createdAt).toLocaleDateString()}
