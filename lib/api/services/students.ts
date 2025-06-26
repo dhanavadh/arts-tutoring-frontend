@@ -16,7 +16,8 @@ export class StudentsService {
 
   async getAllStudents(): Promise<Student[]> {
     const response = await apiClient.get<Student[]>(this.endpoint);
-    return response.data;
+    // Backend returns {data: Student[], message, timestamp, path}
+    return response.data || response;
   }
 
   async getStudentById(id: number): Promise<Student> {

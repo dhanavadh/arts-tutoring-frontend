@@ -207,14 +207,15 @@ export interface QuizAttempt {
 export interface CreateQuizDto {
   title: string;
   description?: string;
+  subject?: string;
   timeLimit?: number;
   questions: {
     question: string;
-    type: QuestionType;
+    questionType: string; // Backend expects 'questionType' not 'type'
     options?: string[];
     correctAnswer?: string;
-    points: number;
-    order: number;
+    correctAnswerExplanation?: string;
+    marks: number; // Backend expects 'marks' not 'points'
   }[];
 }
 

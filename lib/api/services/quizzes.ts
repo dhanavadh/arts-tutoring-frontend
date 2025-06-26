@@ -19,12 +19,28 @@ export class QuizzesService {
     return response.data;
   }
 
+  async updateQuiz(id: number, quizData: CreateQuizDto): Promise<Quiz> {
+    const response = await apiClient.put<Quiz>(`${this.endpoint}/${id}`, quizData);
+    return response.data;
+  }
+
   async getAllQuizzes(params?: PaginationDto): Promise<PaginatedResponse<Quiz>> {
-    const response = await apiClient.get<PaginatedResponse<Quiz>>(
+    const response = await apiClient.get<any>(
       this.endpoint,
       params as Record<string, string>
     );
-    return response.data;
+    
+    // Transform backend response { quizzes, total, page, totalPages } 
+    // to frontend expected format { data, total, page, limit, totalPages }
+    const backendData = response.data;
+    
+    return {
+      data: backendData.quizzes || [],
+      total: backendData.total || 0,
+      page: backendData.page || 1,
+      limit: params?.limit || 10,
+      totalPages: backendData.totalPages || 1,
+    };
   }
 
   async getMyQuizzes(): Promise<Quiz[]> {

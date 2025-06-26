@@ -34,8 +34,8 @@ export const Navbar: React.FC = () => {
                   <Link href="/bookings" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                     My Bookings
                   </Link>
-                  <Link href="/quizzes" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                    Quizzes
+                  <Link href="/quizzes/assigned" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    My Quizzes
                   </Link>
                 </StudentOnly>
 
@@ -47,14 +47,17 @@ export const Navbar: React.FC = () => {
                   <Link href="/schedule" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                     Schedule
                   </Link>
-                  <Link href="/quiz-management" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                    Quiz Management
+                  <Link href="/quizzes" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    My Quizzes
                   </Link>
                 </TeacherOnly>
 
                 <AdminOnly>
                   <Link href="/admin" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                     Admin
+                  </Link>
+                  <Link href="/quizzes" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    All Quizzes
                   </Link>
                 </AdminOnly>
               </div>
