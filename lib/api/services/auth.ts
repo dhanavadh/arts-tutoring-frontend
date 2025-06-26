@@ -23,11 +23,31 @@ export class AuthService {
   }
 
   async register(userData: RegisterDto): Promise<AuthResponse> {
-    const response = await apiClient.post<{ success: boolean; message: string; data: AuthResponse }>(
+    const response = await apiClient.post<{ 
+      success: boolean; 
+      message: string; 
+      data?: AuthResponse;
+      requiresVerification?: boolean;
+      user?: any;
+    }>(
       `${this.endpoint}/register`,
       userData
     );
-    return response.data.data;
+    
+    // Handle OTP verification response structure
+    if (response.data.requiresVerification) {
+      return {
+        user: response.data.data?.user || response.data.user,
+        message: response.data.message,
+        requiresVerification: true
+      };
+    }
+    
+    // Handle normal registration response
+    return response.data.data || {
+      user: response.data.user,
+      message: response.data.message
+    };
   }
 
   async logout(): Promise<{ message: string }> {
@@ -38,16 +58,49 @@ export class AuthService {
   }
 
   async getProfile(): Promise<User> {
-    const response = await apiClient.post<{ success: boolean; data: { user: User } }>(`${this.endpoint}/profile`);
-    return response.data.data.user;
+    try {
+      console.log('Trying to get profile from /users/profile');
+      const response = await apiClient.get<{ user: User }>(`${API_CONFIG.ENDPOINTS.USERS}/profile`);
+      console.log('Profile response:', response);
+      
+      // The backend returns { user: {...} } format
+      if (response.data && response.data.user) {
+        return response.data.user;
+      }
+      
+      // Fallback if the response format is different
+      if (response.data) {
+        return response.data as any;
+      }
+      
+      throw new Error('Invalid profile response format');
+    } catch (error) {
+      console.log('Profile fetch failed:', error);
+      throw new Error('Failed to fetch user profile. Please log in again.');
+    }
   }
 
   async changePassword(passwordData: ChangePasswordDto): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(
       `${this.endpoint}/change-password`,
-      passwordData
+      {
+        oldPassword: passwordData.oldPassword,
+        newPassword: passwordData.newPassword
+      }
     );
     return response.data;
+  }
+
+  async verifyOtp(email: string, otp: string): Promise<AuthResponse> {
+    const response = await apiClient.post<{ 
+      success: boolean; 
+      message: string; 
+      data: AuthResponse 
+    }>(
+      `${this.endpoint}/verify-registration`,
+      { email, otp }
+    );
+    return response.data.data;
   }
 }
 

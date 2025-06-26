@@ -30,7 +30,23 @@ export const LoginForm: React.FC = () => {
       router.push('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed');
+      
+      // Check if error is due to unverified account
+      if (err.message && err.message.includes('verify your account')) {
+        setError(
+          <div>
+            {err.message}{' '}
+            <a 
+              href={`/verify-otp?email=${encodeURIComponent(email)}`}
+              className="font-medium text-blue-600 hover:text-blue-500 underline"
+            >
+              Verify now
+            </a>
+          </div>
+        );
+      } else {
+        setError(err.message || 'Login failed');
+      }
     } finally {
       setIsLoading(false);
     }

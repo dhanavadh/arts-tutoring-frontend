@@ -34,15 +34,32 @@ export class UploadsService {
     return response.data;
   }
 
-  async uploadFile(file: File, description?: string): Promise<FileUpload> {
+  async uploadFile(file: File, uploadType: 'profile_image' | 'article_image' | 'document' = 'profile_image'): Promise<FileUpload> {
     const formData = new FormData();
     formData.append('file', file);
-    if (description) {
-      formData.append('description', description);
-    }
+    formData.append('filename', file.name);
+    formData.append('originalName', file.name);
+    formData.append('mimetype', file.type);
+    formData.append('size', file.size.toString());
+    formData.append('uploadType', uploadType);
+    
+    // Note: uploadedById and path will likely be set by the backend
 
-    const response = await apiClient.upload<FileUpload>(this.endpoint, formData);
-    return response.data;
+    console.log('Uploading file with required fields:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      uploadType,
+      endpoint: this.endpoint
+    });
+
+    try {
+      const response = await apiClient.upload<FileUpload>(this.endpoint, formData);
+      return response.data;
+    } catch (error) {
+      console.error('Upload service error:', error);
+      throw error;
+    }
   }
 }
 

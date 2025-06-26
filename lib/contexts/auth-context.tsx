@@ -10,10 +10,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (userData: any) => Promise<void>;
+  register: (userData: any) => Promise<any>;
   updateUser: (userData: Partial<User>) => void;
+  setUser: (user: User) => void;
   hasRole: (role: UserRole) => boolean;
   hasAnyRole: (roles: UserRole[]) => boolean;
+  checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,19 +40,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loadUser = useCallback(async () => {
     try {
+      console.log('AuthContext: Loading user...');
       setIsLoading(true);
       const userData = await authService.getProfile();
+      console.log('AuthContext: User loaded successfully:', userData);
       setUser(userData);
     } catch (error) {
+      console.log('AuthContext: Failed to load user:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
+      console.log('AuthContext: Loading finished');
     }
   }, []);
 
+  // Check for existing session on mount without making API calls
   useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+    console.log('AuthContext: Initializing without auto-fetch');
+    setIsLoading(false);
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -59,6 +67,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Auth context: Login response:', response);
       setUser(response.user);
       console.log('Auth context: User set successfully');
+      
+      // Load the complete user profile after login
+      await loadUser();
     } catch (error) {
       console.error('Auth context: Login error:', error);
       throw error;
@@ -77,7 +88,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: any) => {
     try {
       const response = await authService.register(userData);
+      
+      // Check if OTP verification is required
+      if (response.requiresVerification) {
+        // Don't set user yet - they need to verify first
+        return response;
+      }
+      
+      // Admin registration - immediate login
       setUser(response.user);
+      return response;
     } catch (error) {
       throw error;
     }
@@ -97,6 +117,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return user ? roles.includes(user.role) : false;
   };
 
+  const checkAuth = async (): Promise<void> => {
+    await loadUser();
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -105,8 +129,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     register,
     updateUser,
+    setUser,
     hasRole,
     hasAnyRole,
+    checkAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

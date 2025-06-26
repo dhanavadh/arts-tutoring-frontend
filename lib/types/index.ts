@@ -78,6 +78,7 @@ export interface ChangePasswordDto {
 export interface AuthResponse {
   user: User;
   message: string;
+  requiresVerification?: boolean;
 }
 
 // Article types

@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1',
   TIMEOUT: 10000,
   ENDPOINTS: {
     AUTH: '/auth',
@@ -11,6 +11,7 @@ export const API_CONFIG = {
     TEACHERS: '/teachers',
     UPLOADS: '/uploads',
     ADMIN: '/admin',
+    OTP: '/otp',
   },
 } as const;
 

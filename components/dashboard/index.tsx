@@ -23,7 +23,17 @@ export const Dashboard: React.FC = () => {
     );
   }
 
-  switch (user.role) {
+  console.log('Dashboard user data:', user);
+  console.log('User role:', user.role, 'Type:', typeof user.role);
+  
+  // Handle nested user structure
+  const actualUser = user.user || user;
+  const userRole = actualUser.role?.toLowerCase?.()?.trim?.() || '';
+  
+  console.log('Actual user:', actualUser);
+  console.log('Actual user role:', actualUser.role);
+  
+  switch (userRole) {
     case 'student':
       return <StudentDashboard />;
     case 'teacher':
@@ -33,8 +43,14 @@ export const Dashboard: React.FC = () => {
     default:
       return (
         <div className="text-center py-8">
-          <h2 className="text-xl font-semibold text-gray-900">Unknown Role: {user.role}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Unknown Role: {actualUser.role}</h2>
           <p className="text-gray-600">Unable to determine dashboard type.</p>
+          <p className="text-gray-500 text-xs mt-2">
+            Raw role value: "{actualUser.role}" (type: {typeof actualUser.role})
+          </p>
+          <p className="text-gray-500 text-xs">
+            Processed role: "{userRole}"
+          </p>
         </div>
       );
   }

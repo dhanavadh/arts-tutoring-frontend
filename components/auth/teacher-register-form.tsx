@@ -95,8 +95,16 @@ export const TeacherRegisterForm: React.FC = () => {
       }
       if (formData.bio) registerData.bio = formData.bio;
 
-      await register(registerData);
-      router.push('/dashboard');
+      const response = await register(registerData);
+      
+      // Check if OTP verification is required
+      if (response && response.requiresVerification) {
+        // Redirect to OTP verification page
+        router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
+      } else {
+        // Admin registration - immediate login
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       console.error('Teacher registration error:', err);
       setError(err.message || 'Registration failed');

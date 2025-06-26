@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/auth-context';
 import { UserRole } from '../types';
 
@@ -17,7 +17,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallback,
   redirectTo = '/login',
 }) => {
-  const { isAuthenticated, isLoading, hasAnyRole } = useAuth();
+  const { isAuthenticated, isLoading, hasAnyRole, user, checkAuth } = useAuth();
+
+  console.log('ProtectedRoute state:', { isAuthenticated, isLoading, user: user?.email || 'none' });
+
+  // Check for authentication when protected route is accessed
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      console.log('ProtectedRoute: Checking for existing authentication...');
+      checkAuth();
+    }
+  }, [isAuthenticated, isLoading, checkAuth]);
 
   if (isLoading) {
     return (
@@ -28,6 +38,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!isAuthenticated) {
+    console.log('User not authenticated, showing access denied');
     if (fallback) {
       return <>{fallback}</>;
     }
@@ -50,6 +61,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (requiredRoles && !hasAnyRole(requiredRoles)) {
+    console.log('User lacks required roles:', requiredRoles);
     if (fallback) {
       return <>{fallback}</>;
     }
@@ -69,5 +81,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
+  console.log('User authenticated, rendering protected content');
   return <>{children}</>;
 };
