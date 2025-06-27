@@ -42,8 +42,8 @@ function EditQuizContent({ id }: { id: number }) {
     title: '',
     description: '',
     timeLimit: undefined,
-    maxAttempts: 1,
-    limitAttempts: true,
+    maxAttempts: undefined,
+    limitAttempts: false,
     status: 'draft',
   });
   
@@ -60,36 +60,35 @@ function EditQuizContent({ id }: { id: number }) {
           title: quizData.title,
           description: quizData.description || '',
           timeLimit: quizData.timeLimit || undefined,
-          maxAttempts: quizData.maxAttempts || 1,
-          limitAttempts: !!quizData.maxAttempts,
+          maxAttempts: (typeof quizData.maxAttempts === 'number' && quizData.maxAttempts > 0) ? quizData.maxAttempts : undefined,
+          limitAttempts: (typeof quizData.maxAttempts === 'number' && quizData.maxAttempts > 0),
           status: quizData.status || 'draft',
         });
 
+        const backendToFrontendType = {
+          'multiple_choice': 'MULTIPLE_CHOICE',
+          'true_false': 'TRUE_FALSE',
+          'short_answer': 'SHORT_ANSWER',
+          'essay': 'ESSAY',
+        } as const;
+        const frontendToBackendType = {
+          'MULTIPLE_CHOICE': 'multiple_choice',
+          'TRUE_FALSE': 'true_false',
+          'SHORT_ANSWER': 'short_answer',
+          'ESSAY': 'essay',
+        } as const;
+
         const formattedQuestions = quizData.questions?.map((q, index) => {
-          // Convert backend question type to frontend format
-          const convertQuestionType = (backendType: string): QuestionType => {
-            const backendToFrontendMap = {
-              'multiple_choice': 'MULTIPLE_CHOICE',
-              'true_false': 'TRUE_FALSE',
-              'short_answer': 'SHORT_ANSWER',
-              'essay': 'ESSAY'
-            };
-            return (backendToFrontendMap[backendType as keyof typeof backendToFrontendMap] || 'MULTIPLE_CHOICE') as QuestionType;
-          };
-
-          const originalType = q.type as string;
-          const convertedType = convertQuestionType(originalType);
-          
-          console.log(`Question ${index + 1}: originalType=${originalType}, convertedType=${convertedType}`);
-
+          const backendType = q.questionType || q.type;
+          const convertedType = backendToFrontendType[backendType as keyof typeof backendToFrontendType] || 'MULTIPLE_CHOICE';
           return {
             id: q.id,
             question: q.question || '',
             type: convertedType,
-            options: (originalType === 'multiple_choice' || convertedType === 'MULTIPLE_CHOICE') ? (q.options || ['', '', '', '']) : [],
+            options: (convertedType === 'MULTIPLE_CHOICE') ? (q.options || ['', '', '', '']) : (convertedType === 'TRUE_FALSE' ? ['true', 'false'] : []),
             correctAnswer: q.correctAnswer || '',
             correctAnswerExplanation: q.correctAnswerExplanation || '',
-            points: q.points || 1,
+            points: q.points || q.marks || 1,
             order: index + 1,
           };
         }) || [];
@@ -146,30 +145,29 @@ function EditQuizContent({ id }: { id: number }) {
         return;
       }
 
+      // Prevent submitting with limitAttempts checked but no valid maxAttempts
+      if (quiz.limitAttempts && (!quiz.maxAttempts || quiz.maxAttempts <= 0)) {
+        setError('Please enter a valid number of maximum attempts (must be greater than 0)');
+        return;
+      }
+
       // Map frontend question types to backend format
       const mapQuestionType = (frontendType: QuestionType | string): string => {
-        if (!frontendType) return 'multiple_choice'; // Default fallback
-        
-        const typeMap = {
+        if (!frontendType) return 'multiple_choice';
+        const frontendToBackendType = {
           'MULTIPLE_CHOICE': 'multiple_choice',
-          'TRUE_FALSE': 'true_false', 
+          'TRUE_FALSE': 'true_false',
           'SHORT_ANSWER': 'short_answer',
           'ESSAY': 'essay',
-          // Also handle backend format in case it comes back that way
-          'multiple_choice': 'multiple_choice',
-          'true_false': 'true_false',
-          'short_answer': 'short_answer',
-          'essay': 'essay'
-        };
-        
-        return typeMap[frontendType as keyof typeof typeMap] || 'multiple_choice';
+        } as const;
+        return frontendToBackendType[frontendType as keyof typeof frontendToBackendType] || 'multiple_choice';
       };
 
+      // Build updateData, only include maxAttempts if limitAttempts is true and >0
       const updateData: CreateQuizDto = {
         title: quiz.title,
         description: quiz.description,
         timeLimit: quiz.timeLimit,
-        maxAttempts: quiz.limitAttempts ? quiz.maxAttempts : undefined,
         status: quiz.status,
         questions: questions.map((q, index) => ({
           question: q.question.trim(),
@@ -178,12 +176,14 @@ function EditQuizContent({ id }: { id: number }) {
           correctAnswer: q.correctAnswer.trim(),
           correctAnswerExplanation: q.correctAnswerExplanation?.trim(),
           marks: q.points,
-        }))
+        })),
       };
-
+      if (quiz.limitAttempts && quiz.maxAttempts && quiz.maxAttempts > 0) {
+        updateData.maxAttempts = quiz.maxAttempts;
+      }
       await quizzesService.updateQuiz(id, updateData);
       console.log('Quiz updated successfully');
-      router.push(`/quizzes/${id}`);
+      router.push(`/quizzes/${id}?updated=true`);
     } catch (err) {
       console.error('Error updating quiz:', err);
       setError(err instanceof Error ? err.message : 'Failed to update quiz');
@@ -283,7 +283,14 @@ function EditQuizContent({ id }: { id: number }) {
                 <input
                   type="checkbox"
                   checked={quiz.limitAttempts}
-                  onChange={(e) => setQuiz(prev => ({ ...prev, limitAttempts: e.target.checked }))}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setQuiz(prev => ({
+                      ...prev,
+                      limitAttempts: checked,
+                      maxAttempts: checked ? (prev.maxAttempts ?? 1) : undefined
+                    }));
+                  }}
                   className="text-blue-600"
                 />
                 <span className="text-sm">Limit the number of attempts</span>
@@ -297,8 +304,8 @@ function EditQuizContent({ id }: { id: number }) {
                   <Input
                     type="number"
                     min="1"
-                    value={quiz.maxAttempts || 1}
-                    onChange={(e) => setQuiz(prev => ({ ...prev, maxAttempts: e.target.value ? parseInt(e.target.value) : 1 }))}
+                    value={quiz.maxAttempts ?? ''}
+                    onChange={(e) => setQuiz(prev => ({ ...prev, maxAttempts: e.target.value ? parseInt(e.target.value) : undefined }))}
                     className="w-32"
                     placeholder="Number of attempts allowed"
                   />
@@ -429,6 +436,25 @@ function EditQuizContent({ id }: { id: number }) {
                       Add Option
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {question.type === 'TRUE_FALSE' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Correct Answer</label>
+                  <select
+                    value={question.correctAnswer}
+                    onChange={(e) => {
+                      const newQuestions = [...questions];
+                      newQuestions[index] = { ...question, correctAnswer: e.target.value };
+                      setQuestions(newQuestions);
+                    }}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                  </select>
                 </div>
               )}
 

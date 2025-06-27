@@ -225,6 +225,21 @@ export interface QuizAttempt {
   maxScore: number;
   graded: boolean;
   quizAssignment: QuizAssignment;
+  // Flat fields from API response
+  studentName?: string;
+  studentEmail?: string;
+  studentId?: number;
+  assignedAt?: string;
+  dueDate?: string;
+  status?: string;
+  // Answers keyed by question id
+  answers?: {
+    [questionId: string]: {
+      studentAnswer: string;
+      correctAnswer: string;
+      marks: number;
+    }
+  };
 }
 
 export interface CreateQuizQuestionDto {

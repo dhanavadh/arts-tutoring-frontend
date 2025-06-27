@@ -43,6 +43,8 @@ function StudentQuizDashboard() {
         const validAssignments = (Array.isArray(data) ? data : []).filter(
           (assignment) => assignment.quiz && assignment.quiz.isActive
         );
+        console.log('Fetched assignments:', data);
+        console.log('Filtered valid assignments:', validAssignments);
         setAssignments(validAssignments);
       } catch (err) {
         setError('Failed to load assigned quizzes');
@@ -86,7 +88,7 @@ function StudentQuizDashboard() {
     // Check due date if no explicit status
     if (!assignment.dueDate) return 'low';
     const timeRemaining = getTimeRemaining(assignment.dueDate);
-    if (timeRemaining === 'Overdue') return 'overdue';
+    if (timeRemaining === 'Overdue' ) return 'overdue';
     if (timeRemaining === 'Due soon' || timeRemaining?.includes('hour')) return 'high';
     if (timeRemaining?.includes('1 day')) return 'medium';
     return 'low';
@@ -139,8 +141,20 @@ function StudentQuizDashboard() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Quizzes</h1>
-        <p className="text-gray-600">Welcome back, {user?.firstName}! Here are your assigned quizzes.</p>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Quizzes</h1>
+            <p className="text-gray-600">Welcome back, {user?.firstName}! Here are your assigned quizzes.</p>
+          </div>
+          <Link href="/quizzes/my-results">
+            <Button variant="outline" className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              View My Results
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -180,6 +194,9 @@ function StudentQuizDashboard() {
       )}
 
       {/* Quizzes List */}
+      <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded">
+        Debug: Rendering {assignments.length} assignments. If you see this, assignments are being processed.
+      </div>
       {assignments.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="max-w-md mx-auto">
@@ -197,7 +214,13 @@ function StudentQuizDashboard() {
           {sortedAssignments.map((assignment) => {
             const priority = getPriorityLevel(assignment);
             const timeRemaining = getTimeRemaining(assignment.dueDate);
-            
+            // Check for submitted=true in URL
+            const isSubmittedView = typeof window !== 'undefined' && window.location.search.includes('submitted=true');
+            // Calculate attempts left
+            const maxAttempts = assignment.quiz?.maxAttempts;
+            const attemptsMade = assignment.attempts || 0;
+            const unlimitedAttempts = !maxAttempts || maxAttempts === 0 || maxAttempts === null;
+            const attemptsLeft = unlimitedAttempts ? null : Math.max(0, maxAttempts - attemptsMade);
             return (
               <Card key={assignment.id} className={`p-6 transition-all hover:shadow-lg ${
                 priority === 'overdue' ? 'border-red-200 bg-red-50' :
@@ -233,11 +256,9 @@ function StudentQuizDashboard() {
                         </span>
                       )}
                     </div>
-                    
                     {assignment.quiz.description && (
                       <p className="text-gray-600 mb-3">{assignment.quiz.description}</p>
                     )}
-                    
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
                       <div>
                         <span className="font-medium">Questions:</span> {assignment.quiz?.questions?.length || 0}
@@ -251,7 +272,6 @@ function StudentQuizDashboard() {
                         </div>
                       )}
                     </div>
-                    
                     <div className="flex flex-wrap gap-4 text-sm">
                       <span className="text-gray-500">
                         Assigned: {formatDate(assignment.assignedAt)}
@@ -276,25 +296,82 @@ function StudentQuizDashboard() {
                       )}
                     </div>
                   </div>
-                  
                   <div className="ml-6 flex flex-col gap-2">
-                    <Link href={`/quizzes/take/${assignment.id}`}>
-                      <Button
-                        size="lg"
-                        className={`w-full min-w-[120px] ${
-                          assignment.completedAt ? 'bg-green-600 hover:bg-green-700' :
-                          priority === 'overdue' ? 'bg-red-600 hover:bg-red-700' :
-                          priority === 'high' ? 'bg-yellow-600 hover:bg-yellow-700' :
-                          'bg-blue-600 hover:bg-blue-700'
-                        }`}
-                      >
-                        {assignment.completedAt ? 'Review' : 'Take Quiz'}
-                      </Button>
-                    </Link>
-                    
+                    {/* Button logic for submitted view */}
+                    {isSubmittedView && assignment.completedAt && (
+                      <>
+                        <div className="flex flex-col items-center mb-2">
+                          <span className="inline-block px-3 py-1 bg-green-600 text-white text-sm font-bold rounded-full mb-2">
+                            Completed
+                          </span>
+                          {unlimitedAttempts ? (
+                            <Link href={`/quizzes/take/${assignment.id}`}>
+                              <Button size="sm" variant="outline" className="w-full">
+                                Do Quiz Again
+                              </Button>
+                            </Link>
+                          ) : attemptsLeft && attemptsLeft > 0 ? (
+                            <Link href={`/quizzes/take/${assignment.id}`}>
+                              <Button size="sm" variant="outline" className="w-full">
+                                Do Quiz Again ({attemptsLeft} left)
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Button size="sm" variant="outline" className="w-full" disabled>
+                              No Attempts Left
+                            </Button>
+                          )}
+                        </div>
+                        <div className="text-center text-xs text-gray-500">
+                          Completed on {formatDate(assignment.completedAt)}
+                        </div>
+                      </>
+                    )}
+                    {/* Main action button logic for quiz assignment */}
+                    {assignment.completedAt || assignment.status === 'completed' ? (
+                      unlimitedAttempts ? (
+                        <Link href={`/quizzes/take/${assignment.id}`}>
+                          <Button size="lg" className="w-full min-w-[120px] bg-green-600 hover:bg-green-700">
+                            Do Quiz Again
+                          </Button>
+                        </Link>
+                      ) : attemptsLeft && attemptsLeft > 0 ? (
+                        <Link href={`/quizzes/take/${assignment.id}`}>
+                          <Button size="lg" className="w-full min-w-[120px] bg-green-600 hover:bg-green-700">
+                            Do Quiz Again ({attemptsLeft} left)
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button size="lg" className="w-full min-w-[120px] bg-gray-400 cursor-not-allowed" disabled>
+                          No Attempts Left
+                        </Button>
+                      )
+                    ) : (
+                      <Link href={`/quizzes/take/${assignment.id}`}>
+                        <Button
+                          size="lg"
+                          className={`w-full min-w-[120px] ${
+                            priority === 'overdue' ? 'bg-red-600 hover:bg-red-700' :
+                            priority === 'high' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                            'bg-blue-600 hover:bg-blue-700'
+                          }`}
+                        >
+                          Take Quiz
+                        </Button>
+                      </Link>
+                    )}
+                    {/* View Result button for completed quizzes */}
+                    {(assignment.completedAt || assignment.status === 'completed') && (
+                      <Link href={`/quizzes/result/${assignment.id}`}>
+                        <Button size="sm" variant="outline" className="w-full mt-2">
+                          View Result
+                        </Button>
+                      </Link>
+                    )}
+                    {/* Completed badge and date */}
                     {assignment.completedAt && (
-                      <div className="text-center text-sm font-medium text-green-600">
-                        Completed on {formatDate(assignment.completedAt)}
+                      <div className="text-center text-xs text-green-700 font-bold mt-2">
+                        Completed on {assignment.completedAt ? formatDate(assignment.completedAt) : ''}
                       </div>
                     )}
                   </div>

@@ -76,14 +76,15 @@ export default function QuizDetailClient({ id }: { id: string }) {
     }
   }, [id, user?.role]);
 
-  // Additional effect to check for fresh redirects from quiz creation
+  // Additional effect to check for fresh redirects from quiz creation or update
   useEffect(() => {
-    // Check if we were redirected from quiz creation (indicated by a hash or query param)
+    // Check if we were redirected from quiz creation or update (indicated by a hash or query param)
     const urlParams = new URLSearchParams(window.location.search);
     const fromCreation = urlParams.get('created') || window.location.hash.includes('created');
+    const fromUpdate = urlParams.get('updated') || window.location.hash.includes('updated');
     
-    if (fromCreation && user?.role) {
-      console.log('Detected redirect from quiz creation, refreshing data in 1 second...');
+    if ((fromCreation || fromUpdate) && user?.role) {
+      console.log('Detected redirect from quiz creation or update, refreshing data in 1 second...');
       // Add a small delay to ensure backend has processed the assignment
       setTimeout(() => {
         refreshQuizData();
@@ -560,6 +561,18 @@ export default function QuizDetailClient({ id }: { id: string }) {
           )}
         </div>
       </Card>
+
+      {/* Button to see results (visible to teacher/admin) */}
+      {(user?.role === 'admin' || user?.role === 'teacher') && quiz && (
+        <div className="mb-4 flex justify-end">
+          <Button
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => router.push(`/quizzes/${quiz.id}/results`)}
+          >
+            View Results
+          </Button>
+        </div>
+      )}
 
       <div className="mt-8">
         <h2 className="text-2xl font-semibold mb-4">Questions</h2>

@@ -27,6 +27,8 @@ export default function QuizResultsPage() {
         ]);
         setQuiz(quizData);
         setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
+        // Log the full attempts data for inspection
+        console.log('Fetched attempts data:', attemptsData);
       } catch (err) {
         setError('Failed to load quiz results');
         console.error('Error fetching quiz results:', err);
@@ -147,28 +149,33 @@ export default function QuizResultsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {attempts.map((attempt) => {
+                  {attempts.map((attempt, idx) => {
+                    console.log('Rendering attempt:', attempt);
                     const percentage = attempt.score !== undefined 
                       ? getScorePercentage(attempt.score, attempt.maxScore)
                       : 0;
-                    
-                    return (
-                      <tr key={attempt.id} className="border-b hover:bg-gray-50">
+                    // Use flat fields from API response
+                    const studentName = attempt.studentName || 'Unknown student';
+                    const studentEmail = attempt.studentEmail || 'N/A';
+                    const startedAt = attempt.assignedAt || attempt.startedAt;
+                    const submittedAt = attempt.submittedAt;
+                    return [
+                      <tr key={attempt.id ?? attempt.studentId ?? `attempt-${idx}`} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-2">
                           <div>
                             <div className="font-medium">
-                              {attempt.quizAssignment.student.user.firstName} {attempt.quizAssignment.student.user.lastName}
+                              {studentName}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {attempt.quizAssignment.student.user.email}
+                              {studentEmail}
                             </div>
                           </div>
                         </td>
                         <td className="py-3 px-2 text-sm">
-                          {formatDate(attempt.startedAt)}
+                          {startedAt ? formatDate(startedAt) : '-'}
                         </td>
                         <td className="py-3 px-2 text-sm">
-                          {attempt.submittedAt ? formatDate(attempt.submittedAt) : '-'}
+                          {submittedAt ? formatDate(submittedAt) : '-'}
                         </td>
                         <td className="py-3 px-2">
                           {attempt.score !== undefined ? (
@@ -190,29 +197,100 @@ export default function QuizResultsPage() {
                         </td>
                         <td className="py-3 px-2">
                           <span className={`px-2 py-1 rounded text-xs ${
-                            !attempt.submittedAt
+                            attempt.status === 'in_progress' || attempt.status === 'assigned'
                               ? 'bg-yellow-100 text-yellow-800'
                               : attempt.graded
                               ? 'bg-green-100 text-green-800'
                               : 'bg-blue-100 text-blue-800'
                           }`}>
-                            {!attempt.submittedAt 
-                              ? 'In Progress' 
-                              : attempt.graded 
-                              ? 'Graded' 
-                              : 'Submitted'
-                            }
+                            {attempt.status === 'in_progress' || attempt.status === 'assigned'
+                              ? 'In Progress'
+                              : attempt.graded
+                              ? 'Graded'
+                              : 'Submitted'}
                           </span>
                         </td>
                         <td className="py-3 px-2">
-                          {attempt.submittedAt && !attempt.graded && (
-                            <Button size="sm" variant="outline">
-                              Grade
-                            </Button>
-                          )}
+                          <div className="flex gap-2">
+                            {attempt.answers && Object.keys(attempt.answers).length > 0 && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => window.open(`/quizzes/teacher-view-result/${attempt.id}`, '_blank')}
+                              >
+                                View Details
+                              </Button>
+                            )}
+                            {submittedAt && !attempt.graded && (
+                              <Button size="sm" variant="outline">
+                                Grade
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>,
+                      // Details row for answers
+                      <tr key={`details-${attempt.id ?? attempt.studentId ?? idx}`}> 
+                        <td colSpan={7} className="bg-gray-50 px-4 py-2">
+                          <div className="text-sm">
+                            <div className="flex justify-between items-center mb-3">
+                              <strong className="text-base">Quick Answer Preview:</strong>
+                              {attempt.answers && Object.keys(attempt.answers).length > 0 && (
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  onClick={() => window.open(`/quizzes/teacher-view-result/${attempt.id}`, '_blank')}
+                                >
+                                  View Full Details
+                                </Button>
+                              )}
+                            </div>
+                            {attempt.answers && Object.keys(attempt.answers).length > 0 ? (
+                              <div className="grid gap-3">
+                                {quiz?.questions?.slice(0, 3).map((q) => {
+                                  const answerObj = attempt.answers?.[q.id];
+                                  const studentAnswer = answerObj?.studentAnswer || answerObj;
+                                  const correctAnswer = answerObj?.correctAnswer || q.correctAnswer;
+                                  const isCorrect = studentAnswer === correctAnswer;
+                                  
+                                  return (
+                                    <div key={q.id} className="bg-white p-3 rounded border">
+                                      <div className="font-medium mb-2 text-gray-800">
+                                        Q: {q.question.length > 80 ? q.question.substring(0, 80) + '...' : q.question}
+                                      </div>
+                                      <div className="flex gap-4 text-sm">
+                                        <div>
+                                          <span className="text-gray-600">Student:</span> 
+                                          <span className={`ml-1 font-mono ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                                            {studentAnswer || 'Not answered'}
+                                          </span>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-600">Correct:</span> 
+                                          <span className="ml-1 font-mono text-green-600">{correctAnswer}</span>
+                                        </div>
+                                        <div>
+                                          <span className={`px-2 py-1 rounded text-xs ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                            {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                {quiz?.questions && quiz.questions.length > 3 && (
+                                  <div className="text-center text-gray-500 text-sm">
+                                    ... and {quiz.questions.length - 3} more questions
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-gray-500 italic">No answers submitted yet</div>
+                            )}
+                          </div>
                         </td>
                       </tr>
-                    );
+                    ];
                   })}
                 </tbody>
               </table>

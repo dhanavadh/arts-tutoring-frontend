@@ -124,8 +124,8 @@ export default function CreateQuizPage() {
   // Step 1: Quiz Basics
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [limitAttempts, setLimitAttempts] = useState(true);
-  const [maxAttempts, setMaxAttempts] = useState(1);
+  const [limitAttempts, setLimitAttempts] = useState(false); // Default to unchecked
+  const [maxAttempts, setMaxAttempts] = useState<number | undefined>(undefined); // Default to undefined
 
   // Step 2: Questions
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -158,7 +158,7 @@ export default function CreateQuizPage() {
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 0:
-        return validateQuizBasics(title, description, limitAttempts, maxAttempts);
+        return validateQuizBasics(title, description, limitAttempts, maxAttempts ?? 0);
       case 1:
         const questionErrors: string[] = [];
         if (questions.length === 0) {
@@ -262,28 +262,22 @@ export default function CreateQuizPage() {
     try {
       // Map frontend question types to backend format
       const mapQuestionType = (frontendType: QuestionType | string): string => {
-        // Handle both string and enum cases
-        const normalizedType = String(frontendType).toUpperCase();
-        
-        const typeMap: Record<string, string> = {
+        if (!frontendType) return 'multiple_choice';
+        const frontendToBackendType = {
           'MULTIPLE_CHOICE': 'multiple_choice',
-          'TRUE_FALSE': 'true_false', 
+          'TRUE_FALSE': 'true_false',
           'SHORT_ANSWER': 'short_answer',
-          'ESSAY': 'essay'
-        };
-        
-        return typeMap[normalizedType] || 'multiple_choice';
+          'ESSAY': 'essay',
+        } as const;
+        return frontendToBackendType[frontendType as keyof typeof frontendToBackendType] || 'multiple_choice';
       };
 
-      // Map frontend questions to backend format
       const mappedQuestions: CreateQuizQuestionDto[] = questions.map((q, index) => {
         const mappedType = mapQuestionType(q.type);
-        
         return {
           question: q.question,
           questionType: mappedType,
-          options: q.type === 'MULTIPLE_CHOICE' ? q.options.filter(opt => opt.trim()) : 
-                  q.type === 'TRUE_FALSE' ? ['true', 'false'] : [],
+          options: q.type === 'MULTIPLE_CHOICE' ? q.options.filter(opt => opt.trim()) : undefined,
           correctAnswer: q.correctAnswer,
           correctAnswerExplanation: q.correctAnswerExplanation || '',
           marks: q.points,
@@ -293,9 +287,11 @@ export default function CreateQuizPage() {
       const quizData: CreateQuizDto = {
         title,
         description,
-        maxAttempts: limitAttempts ? maxAttempts : undefined,
         questions: mappedQuestions,
       };
+      if (limitAttempts && maxAttempts && maxAttempts > 0) {
+        quizData.maxAttempts = maxAttempts;
+      }
 
       const createdQuiz = await quizzesService.createQuiz(quizData);
 
@@ -372,7 +368,11 @@ export default function CreateQuizPage() {
                     <input
                       type="checkbox"
                       checked={limitAttempts}
-                      onChange={(e) => setLimitAttempts(e.target.checked)}
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setLimitAttempts(checked);
+                        setMaxAttempts(checked ? 1 : undefined); // Always set to undefined when unchecked
+                      }}
                       className="text-blue-600"
                     />
                     <span className="text-sm">Limit the number of attempts</span>
@@ -385,11 +385,11 @@ export default function CreateQuizPage() {
                       </label>
                       <Input
                         type="number"
-                        value={maxAttempts}
-                        onChange={(e) => setMaxAttempts(parseInt(e.target.value) || 1)}
-                        min={1}
-                        max={10}
+                        min="1"
+                        value={maxAttempts ?? ''}
+                        onChange={e => setMaxAttempts(e.target.value ? parseInt(e.target.value) : undefined)}
                         className="w-32"
+                        placeholder="Number of attempts allowed"
                       />
                       <p className="text-xs text-gray-500 mt-1">How many times can a student attempt this quiz? (1-10)</p>
                     </div>
@@ -479,6 +479,7 @@ export default function CreateQuizPage() {
                               <option value="MULTIPLE_CHOICE">Multiple Choice</option>
                               <option value="TRUE_FALSE">True/False</option>
                               <option value="SHORT_ANSWER">Short Answer</option>
+                              <option value="ESSAY">Essay</option>
                             </select>
                           </div>
 
@@ -571,6 +572,20 @@ export default function CreateQuizPage() {
                           </div>
                         )}
 
+                        {question.type === 'ESSAY' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Model Answer { /* or 'Sample Answer' */ }
+                            </label>
+                            <Input
+                              value={question.correctAnswer}
+                              onChange={(e) => updateQuestion(index, 'correctAnswer', e.target.value)}
+                              placeholder="Enter a model answer for this essay question..."
+                            />
+                          </div>
+                        )}
+
+                        {/* Only render explanation once for all types */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Explanation (optional)
@@ -578,7 +593,7 @@ export default function CreateQuizPage() {
                           <textarea
                             value={question.correctAnswerExplanation || ''}
                             onChange={(e) => updateQuestion(index, 'correctAnswerExplanation', e.target.value)}
-                            placeholder="Explain why this is the correct answer..."
+                            placeholder="Explain why this is the correct answer, or provide additional notes..."
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                             rows={2}
                           />

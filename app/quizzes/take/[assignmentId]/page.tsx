@@ -19,12 +19,15 @@ export default function TakeQuizPage() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [startTime, setStartTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const elapsedTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -35,7 +38,11 @@ export default function TakeQuizPage() {
         setAttempt(attemptData);
         setAssignment(attemptData.quizAssignment);
         
-        // Set up timer if quiz has time limit
+        // Set start time for elapsed time tracking
+        const now = new Date();
+        setStartTime(now);
+        
+        // Set up countdown timer if quiz has time limit
         if (attemptData.quizAssignment.quiz.timeLimit) {
           const timeLimit = attemptData.quizAssignment.quiz.timeLimit * 60; // Convert to seconds
           setTimeLeft(timeLimit);
@@ -50,6 +57,11 @@ export default function TakeQuizPage() {
             });
           }, 1000);
         }
+        
+        // Always set up elapsed time tracker
+        elapsedTimerRef.current = setInterval(() => {
+          setElapsedTime((prev) => prev + 1);
+        }, 1000);
       } catch (err: any) {
         console.error('Error starting quiz:', err);
         console.error('Error message:', err.message);
@@ -127,6 +139,9 @@ export default function TakeQuizPage() {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      if (elapsedTimerRef.current) {
+        clearInterval(elapsedTimerRef.current);
+      }
       if (autoSaveRef.current) {
         clearTimeout(autoSaveRef.current);
       }
@@ -184,19 +199,14 @@ export default function TakeQuizPage() {
 
     setSubmitting(true);
     try {
-      const submitData = {
-        answers: Object.entries(answers).map(([questionId, answer]) => ({
-          questionId: parseInt(questionId),
-          answer,
-        })),
-      };
-
+      const submitData = { answers };
       await quizzesService.submitQuiz(attempt.id, submitData);
-      
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      
+      if (elapsedTimerRef.current) {
+        clearInterval(elapsedTimerRef.current);
+      }
       router.push('/quizzes?submitted=true');
     } catch (err) {
       console.error('Error submitting quiz:', err);
@@ -232,6 +242,17 @@ export default function TakeQuizPage() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const formatElapsedTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   const getTimeColor = (seconds: number) => {
     if (seconds < 300) return 'text-red-600'; // Less than 5 minutes
     if (seconds < 600) return 'text-yellow-600'; // Less than 10 minutes
@@ -240,8 +261,8 @@ export default function TakeQuizPage() {
 
   const renderQuestion = (question: QuizQuestion) => {
     const currentAnswer = answers[question.id] || '';
-
-    switch (question.type) {
+    // Use question.questionType (handle both cases)
+    switch ((question.questionType || '').toUpperCase()) {
       case 'MULTIPLE_CHOICE':
         return (
           <div className="space-y-3">
@@ -368,7 +389,15 @@ export default function TakeQuizPage() {
     );
   }
 
-  const currentQuestion = assignment.quiz.questions.sort((a, b) => a.order - b.order)[currentQuestionIndex];
+  // Add debug log before rendering
+  if (assignment && assignment.quiz && assignment.quiz.questions) {
+    console.log('Quiz questions:', assignment.quiz.questions);
+    assignment.quiz.questions.forEach((q, i) => {
+      console.log(`Question #${i + 1} type:`, q.type, 'Full:', q);
+    });
+  }
+
+  const currentQuestion = assignment.quiz.questions.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[currentQuestionIndex];
   const totalQuestions = assignment.quiz.questions.length;
   const answeredCount = Object.keys(answers).length;
   const progressPercentage = ((currentQuestionIndex + 1) / totalQuestions) * 100;
@@ -395,6 +424,17 @@ export default function TakeQuizPage() {
                   </div>
                 )}
                 
+                {/* Always show elapsed time */}
+                <Card className="p-3">
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">Time Elapsed</div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {formatElapsedTime(elapsedTime)}
+                    </div>
+                  </div>
+                </Card>
+                
+                {/* Show countdown timer only if quiz has time limit */}
                 {timeLeft !== null && (
                   <Card className="p-3">
                     <div className="text-center">
@@ -432,7 +472,7 @@ export default function TakeQuizPage() {
                 <h3 className="font-semibold text-gray-900 mb-4">Questions</h3>
                 <div className="grid grid-cols-5 lg:grid-cols-4 gap-2">
                   {assignment.quiz.questions
-                    .sort((a, b) => a.order - b.order)
+                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                     .map((q, index) => {
                       const status = getQuestionStatus(q.id);
                       const isCurrent = index === currentQuestionIndex;
@@ -512,6 +552,16 @@ export default function TakeQuizPage() {
                   </Button>
 
                   <div className="flex gap-3">
+                    <Button
+                      onClick={() => router.push('/quizzes')}
+                      variant="danger"
+                      className="flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Close Without Saving
+                    </Button>
                     {currentQuestionIndex === totalQuestions - 1 ? (
                       <Button
                         onClick={() => setShowConfirmSubmit(true)}

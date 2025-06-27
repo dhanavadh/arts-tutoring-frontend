@@ -217,6 +217,34 @@ export class QuizzesService {
       throw error;
     }
   }
+
+  async getAssignmentById(assignmentId: number | string): Promise<QuizAssignment> {
+    const response = await apiClient.get<QuizAssignment>(`${this.endpoint}/assignments/${assignmentId}`);
+    return response.data;
+  }
+
+  async getStudentAttempts(): Promise<any[]> {
+    console.log('QuizzesService: calling getStudentAttempts...');
+    console.log('QuizzesService: endpoint will be:', `${this.endpoint}/my-attempts`);
+    const response = await apiClient.get<any[]>(`${this.endpoint}/my-attempts`);
+    console.log('QuizzesService: getStudentAttempts response:', response);
+    return response.data;
+  }
+
+  async getAttemptDetails(attemptId: number): Promise<any> {
+    const response = await apiClient.get<any>(`${this.endpoint}/attempts/${attemptId}/details`);
+    return response.data;
+  }
+
+  async debugGetStudentAttempts(): Promise<any> {
+    const response = await apiClient.get<any>(`${this.endpoint}/debug/my-attempts`);
+    return response.data;
+  }
+
+  async getAssignmentResult(assignmentId: number): Promise<any> {
+    const response = await apiClient.get<any>(`${this.endpoint}/assignments/${assignmentId}/result`);
+    return response.data;
+  }
 }
 
 export const quizzesService = new QuizzesService();
