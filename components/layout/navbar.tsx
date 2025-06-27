@@ -34,7 +34,7 @@ export const Navbar: React.FC = () => {
                   <Link href="/bookings" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                     My Bookings
                   </Link>
-                  <Link href="/quizzes/assigned" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <Link href="/quizzes" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                     My Quizzes
                   </Link>
                 </StudentOnly>

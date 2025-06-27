@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { quizzesService } from '@/lib/api/services/quizzes';
-import { CreateQuizDto, CreateQuizQuestionDto, QuestionType, UserRole } from '@/lib/types';
+import { studentsService } from '@/lib/api/services/students';
+import { CreateQuizDto, CreateQuizQuestionDto, QuestionType, Student, AssignQuizDto, UserRole } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,14 +56,14 @@ const Stepper = ({ currentStep, steps }: StepperProps) => (
 );
 
 // Validation utilities
-const validateQuizBasics = (title: string, description: string, limitAttempts: boolean, maxAttempts: number) => {
+const validateQuizBasics = (title: string, description: string, maxAttempts: number) => {
   const errors: string[] = [];
   
   if (!title.trim()) errors.push('Quiz title is required');
   if (title.length > 100) errors.push('Quiz title must be less than 100 characters');
   if (!description.trim()) errors.push('Quiz description is required');
   if (description.length > 500) errors.push('Quiz description must be less than 500 characters');
-  if (limitAttempts && (maxAttempts < 1 || maxAttempts > 10)) errors.push('Max attempts must be between 1 and 10');
+  if (maxAttempts < 1 || maxAttempts > 10) errors.push('Max attempts must be between 1 and 10');
   
   return errors;
 };
@@ -114,7 +115,7 @@ interface QuizQuestion {
   order: number;
 }
 
-export default function CreateQuizPage() {
+export default function NewCreateQuizPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
@@ -124,20 +125,35 @@ export default function CreateQuizPage() {
   // Step 1: Quiz Basics
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [limitAttempts, setLimitAttempts] = useState(true);
   const [maxAttempts, setMaxAttempts] = useState(1);
 
   // Step 2: Questions
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
 
-
+  // Step 3: Assignment (optional)
+  const [assignToStudents, setAssignToStudents] = useState(false);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+  const [dueDate, setDueDate] = useState('');
 
   const steps = ['Quiz Details', 'Add Questions', 'Review & Create'];
 
+  // Load students if user decides to assign
+  useEffect(() => {
+    if (assignToStudents && user?.role === UserRole.TEACHER) {
+      loadStudents();
+    }
+  }, [assignToStudents, user]);
 
-
-
+  const loadStudents = async () => {
+    try {
+      const studentsList = await studentsService.getAllStudents();
+      setStudents(studentsList);
+    } catch (error) {
+      console.error('Error loading students:', error);
+    }
+  };
 
   // Step navigation
   const nextStep = () => {
@@ -158,7 +174,7 @@ export default function CreateQuizPage() {
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 0:
-        return validateQuizBasics(title, description, limitAttempts, maxAttempts);
+        return validateQuizBasics(title, description, maxAttempts);
       case 1:
         const questionErrors: string[] = [];
         if (questions.length === 0) {
@@ -169,6 +185,9 @@ export default function CreateQuizPage() {
         });
         return questionErrors;
       case 2:
+        if (assignToStudents && selectedStudents.length === 0) {
+          return ['Please select at least one student to assign the quiz to'];
+        }
         return [];
       default:
         return [];
@@ -260,46 +279,42 @@ export default function CreateQuizPage() {
     setErrors([]);
 
     try {
-      // Map frontend question types to backend format
-      const mapQuestionType = (frontendType: QuestionType | string): string => {
-        // Handle both string and enum cases
-        const normalizedType = String(frontendType).toUpperCase();
-        
-        const typeMap: Record<string, string> = {
-          'MULTIPLE_CHOICE': 'multiple_choice',
-          'TRUE_FALSE': 'true_false', 
-          'SHORT_ANSWER': 'short_answer',
-          'ESSAY': 'essay'
-        };
-        
-        return typeMap[normalizedType] || 'multiple_choice';
-      };
-
       // Map frontend questions to backend format
-      const mappedQuestions: CreateQuizQuestionDto[] = questions.map((q, index) => {
-        const mappedType = mapQuestionType(q.type);
-        
-        return {
-          question: q.question,
-          questionType: mappedType,
-          options: q.type === 'MULTIPLE_CHOICE' ? q.options.filter(opt => opt.trim()) : 
-                  q.type === 'TRUE_FALSE' ? ['true', 'false'] : [],
-          correctAnswer: q.correctAnswer,
-          correctAnswerExplanation: q.correctAnswerExplanation || '',
-          marks: q.points,
-        };
-      });
+      const mappedQuestions: CreateQuizQuestionDto[] = questions.map((q, index) => ({
+        question: q.question,
+        questionType: q.type,
+        options: q.type === 'MULTIPLE_CHOICE' ? q.options.filter(opt => opt.trim()) : 
+                q.type === 'TRUE_FALSE' ? ['true', 'false'] : [],
+        correctAnswer: q.correctAnswer,
+        correctAnswerExplanation: q.correctAnswerExplanation || '',
+        marks: q.points,
+      }));
 
       const quizData: CreateQuizDto = {
         title,
         description,
-        maxAttempts: limitAttempts ? maxAttempts : undefined,
+        maxAttempts,
         questions: mappedQuestions,
       };
 
       const createdQuiz = await quizzesService.createQuiz(quizData);
 
-      router.push(`/quizzes/${createdQuiz.id}?created=true`);
+      // If user chose to assign, do it now
+      if (assignToStudents && selectedStudents.length > 0) {
+        try {
+          const assignmentData: AssignQuizDto = {
+            quizId: createdQuiz.id,
+            studentIds: selectedStudents,
+            dueDate: dueDate || undefined,
+          };
+          await quizzesService.assignQuiz(createdQuiz.id, assignmentData);
+        } catch (assignError) {
+          console.warn('Quiz created but assignment failed:', assignError);
+          // Continue anyway - quiz was created successfully
+        }
+      }
+
+      router.push(`/quizzes/${createdQuiz.id}`);
     } catch (error: any) {
       console.error('Error creating quiz:', error);
       setErrors([error?.message || 'Failed to create quiz. Please try again.']);
@@ -313,7 +328,7 @@ export default function CreateQuizPage() {
       <div className="max-w-4xl mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Create New Quiz</h1>
-          <p className="text-gray-600 mt-2">Follow the steps to create your quiz</p>
+          <p className="text-gray-600 mt-2">Follow the steps to create and optionally assign your quiz</p>
         </div>
 
         <Stepper currentStep={currentStep} steps={steps} />
@@ -363,42 +378,17 @@ export default function CreateQuizPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Attempt Limits
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Maximum Attempts *
                 </label>
-                
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={limitAttempts}
-                      onChange={(e) => setLimitAttempts(e.target.checked)}
-                      className="text-blue-600"
-                    />
-                    <span className="text-sm">Limit the number of attempts</span>
-                  </label>
-                  
-                  {limitAttempts && (
-                    <div className="ml-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Maximum Attempts *
-                      </label>
-                      <Input
-                        type="number"
-                        value={maxAttempts}
-                        onChange={(e) => setMaxAttempts(parseInt(e.target.value) || 1)}
-                        min={1}
-                        max={10}
-                        className="w-32"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">How many times can a student attempt this quiz? (1-10)</p>
-                    </div>
-                  )}
-                  
-                  {!limitAttempts && (
-                    <p className="text-sm text-gray-600 ml-6">Students will have unlimited attempts</p>
-                  )}
-                </div>
+                <Input
+                  type="number"
+                  value={maxAttempts}
+                  onChange={(e) => setMaxAttempts(parseInt(e.target.value) || 1)}
+                  min={1}
+                  max={10}
+                />
+                <p className="text-xs text-gray-500 mt-1">How many times can a student attempt this quiz? (1-10)</p>
               </div>
             </div>
           </Card>
@@ -605,14 +595,70 @@ export default function CreateQuizPage() {
                 <p><span className="font-medium">Description:</span> {description}</p>
                 <p><span className="font-medium">Questions:</span> {questions.length}</p>
                 <p><span className="font-medium">Total Points:</span> {questions.reduce((sum, q) => sum + q.points, 0)}</p>
-                <p><span className="font-medium">Max Attempts:</span> {limitAttempts ? maxAttempts : 'Unlimited'}</p>
+                <p><span className="font-medium">Max Attempts:</span> {maxAttempts}</p>
               </div>
+            </div>
+
+            {/* Optional Assignment */}
+            <div className="mb-6">
+              <label className="flex items-center space-x-2 mb-4">
+                <input
+                  type="checkbox"
+                  checked={assignToStudents}
+                  onChange={(e) => setAssignToStudents(e.target.checked)}
+                  className="text-blue-600"
+                />
+                <span className="font-medium">Assign to students now (optional)</span>
+              </label>
+
+              {assignToStudents && (
+                <div className="space-y-4 pl-6 border-l-2 border-blue-200">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Students *
+                    </label>
+                    <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md p-3 space-y-2">
+                      {students.map(student => (
+                        <label key={student.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedStudents.includes(student.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStudents([...selectedStudents, student.id]);
+                              } else {
+                                setSelectedStudents(selectedStudents.filter(id => id !== student.id));
+                              }
+                            }}
+                            className="text-blue-600"
+                          />
+                          <span className="text-sm">{student.user.firstName} {student.user.lastName}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Due Date (optional)
+                    </label>
+                    <Input
+                      type="datetime-local"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-blue-50 p-4 rounded-lg">
               <p className="text-sm text-blue-800">
                 📝 <strong>Note:</strong> Your quiz will be created as a draft. 
-                You can assign it to students and publish it later from the quiz details page.
+                {assignToStudents 
+                  ? ' After creation, you can publish it so students can take it.'
+                  : ' You can assign it to students and publish it later from the quiz details page.'
+                }
               </p>
             </div>
           </Card>

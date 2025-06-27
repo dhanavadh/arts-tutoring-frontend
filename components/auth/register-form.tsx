@@ -57,11 +57,11 @@ export const RegisterForm: React.FC = () => {
         role: formData.role,
       };
 
-      if (formData.role === 'STUDENT') {
+      if (formData.role === UserRole.STUDENT) {
         if (formData.grade) registerData.grade = formData.grade;
         if (formData.school) registerData.school = formData.school;
         if (formData.parentContact) registerData.parentContact = formData.parentContact;
-      } else if (formData.role === 'TEACHER') {
+      } else if (formData.role === UserRole.TEACHER) {
         if (formData.subjects) registerData.subjects = formData.subjects.split(',').map(s => s.trim());
         if (formData.qualifications) registerData.qualifications = formData.qualifications;
         if (formData.experience) registerData.experience = formData.experience;
@@ -160,7 +160,7 @@ export const RegisterForm: React.FC = () => {
                 </select>
               </div>
 
-              {formData.role === 'STUDENT' && (
+              {formData.role === UserRole.STUDENT && (
                 <>
                   <Input
                     label="Grade"
@@ -183,7 +183,7 @@ export const RegisterForm: React.FC = () => {
                 </>
               )}
 
-              {formData.role === 'TEACHER' && (
+              {formData.role === UserRole.TEACHER && (
                 <>
                   <Input
                     label="Subjects (comma-separated)"

@@ -3,8 +3,25 @@ export * from './config';
 export * from './client';
 export * from './services';
 
-// Re-export types for convenience
-export * from '../types';
+// Re-export types for convenience (excluding conflicting ones)
+export type { 
+  User, 
+  Student, 
+  Teacher, 
+  Quiz, 
+  QuizQuestion, 
+  QuizAssignment, 
+  QuizAttempt,
+  Article,
+  CreateQuizDto,
+  CreateQuizQuestionDto,
+  AssignQuizDto,
+  QuestionType,
+  BookingStatus
+} from '../types';
+
+// Re-export enums separately
+export { UserRole } from '../types';
 
 // Re-export hooks
 export * from '../hooks/use-api';

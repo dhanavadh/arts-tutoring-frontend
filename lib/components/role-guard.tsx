@@ -36,21 +36,21 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
 
 // Specific role components for convenience
 export const AdminOnly: React.FC<Omit<RoleGuardProps, 'allowedRoles'>> = (props) => (
-  <RoleGuard {...props} allowedRoles={['admin']} />
+  <RoleGuard {...props} allowedRoles={[UserRole.ADMIN]} />
 );
 
 export const TeacherOnly: React.FC<Omit<RoleGuardProps, 'allowedRoles'>> = (props) => (
-  <RoleGuard {...props} allowedRoles={['teacher']} />
+  <RoleGuard {...props} allowedRoles={[UserRole.TEACHER]} />
 );
 
 export const StudentOnly: React.FC<Omit<RoleGuardProps, 'allowedRoles'>> = (props) => (
-  <RoleGuard {...props} allowedRoles={['student']} />
+  <RoleGuard {...props} allowedRoles={[UserRole.STUDENT]} />
 );
 
 export const TeacherOrAdmin: React.FC<Omit<RoleGuardProps, 'allowedRoles'>> = (props) => (
-  <RoleGuard {...props} allowedRoles={['teacher', 'admin']} />
+  <RoleGuard {...props} allowedRoles={[UserRole.TEACHER, UserRole.ADMIN]} />
 );
 
 export const StudentOrTeacher: React.FC<Omit<RoleGuardProps, 'allowedRoles'>> = (props) => (
-  <RoleGuard {...props} allowedRoles={['student', 'teacher']} />
+  <RoleGuard {...props} allowedRoles={[UserRole.STUDENT, UserRole.TEACHER]} />
 );

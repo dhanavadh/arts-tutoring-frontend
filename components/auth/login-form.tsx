@@ -59,16 +59,20 @@ export const LoginForm: React.FC = () => {
       await login(email, password);
       console.log('Login successful, checking cookies before redirect...');
       
-      // Check cookies immediately after login
-      const cookiesAfterLogin = document.cookie;
-      console.log('Login form: Cookies after login:', cookiesAfterLogin);
-      console.log('Login form: Has access_token:', cookiesAfterLogin.includes('access_token'));
+      // Check cookies immediately after login (only in browser)
+      if (typeof document !== 'undefined') {
+        const cookiesAfterLogin = document.cookie;
+        console.log('Login form: Cookies after login:', cookiesAfterLogin);
+        console.log('Login form: Has access_token:', cookiesAfterLogin.includes('access_token'));
+      }
       
       // Wait a moment for any async cookie setting
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const cookiesAfterDelay = document.cookie;
-      console.log('Login form: Cookies after delay:', cookiesAfterDelay);
+      if (typeof document !== 'undefined') {
+        const cookiesAfterDelay = document.cookie;
+        console.log('Login form: Cookies after delay:', cookiesAfterDelay);
+      }
       
       console.log('Redirecting to dashboard...');
       router.push('/dashboard');
@@ -77,17 +81,7 @@ export const LoginForm: React.FC = () => {
       
       // Check if error is due to unverified account
       if (err.message && err.message.includes('verify your account')) {
-        setError(
-          <div>
-            {err.message}{' '}
-            <a 
-              href={`/verify-otp?email=${encodeURIComponent(email)}`}
-              className="font-medium text-blue-600 hover:text-blue-500 underline"
-            >
-              Verify now
-            </a>
-          </div>
-        );
+        setError(err.message + ' Please verify your account.');
       } else {
         setError(err.message || 'Login failed');
       }

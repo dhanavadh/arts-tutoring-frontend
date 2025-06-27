@@ -40,7 +40,9 @@ class ApiClient {
     if (endpoint.includes('/profile') || endpoint.includes('/auth')) {
       console.log('API Client: Making authenticated request to:', url);
       console.log('API Client: Request config:', config);
-      console.log('API Client: Document cookies:', document.cookie);
+      if (typeof document !== 'undefined') {
+        console.log('API Client: Document cookies:', document.cookie);
+      }
     }
 
 
@@ -70,28 +72,55 @@ class ApiClient {
           console.log('Raw error response text:', responseText);
           
           // Try to parse as JSON
-          errorData = JSON.parse(responseText);
-        } catch (parseError) {
-          console.log('Failed to parse error response as JSON:', parseError);
+          try {
+            errorData = JSON.parse(responseText);
+          } catch (jsonError) {
+            console.log('Failed to parse error response as JSON:', jsonError);
+            errorData = {
+              message: responseText || 'An error occurred',
+              statusCode: response.status,
+            };
+          }
+        } catch (textError) {
+          console.log('Failed to read response text:', textError);
           errorData = {
-            message: responseText || 'An error occurred',
+            message: 'Failed to read error response from server',
             statusCode: response.status,
           };
         }
         
-        console.error('API Error Status:', response.status);
-        console.error('API Error URL:', url);
-        console.error('API Response Text:', responseText);
-        console.error('API Error Data:', errorData);
-        console.error('Request method:', config.method);
-        console.error('Request headers:', config.headers);
+        const errorDetails = {
+          endpoint,
+          status: response.status,
+          statusText: response.statusText,
+          url: url,
+          method: config.method,
+          responseText: responseText.substring(0, 500), // Limit response size in logs
+          errorData: errorData,
+          headers: Object.fromEntries(Object.entries(config.headers || {}).filter(([key]) => key !== 'Authorization')), // Avoid logging auth tokens
+          timestamp: new Date().toISOString(),
+        };
+        
+        console.error('API ERROR DETAILS:', JSON.stringify(errorDetails, null, 2));
         
         // Handle specific error cases
         if (response.status === 401) {
           throw new Error(errorData.message || 'Authentication required');
         }
-        if (response.status === 500 && errorData.message?.includes('email')) {
-          throw new Error('Registration successful but email verification failed. Please contact support.');
+        if (response.status === 403) {
+          throw new Error(errorData.message || 'You do not have permission to access this resource');
+        }
+        if (response.status === 404) {
+          throw new Error(errorData.message || 'The requested resource was not found');
+        }
+        if (response.status === 500) {
+          if (errorData.message?.includes('email')) {
+            throw new Error('Registration successful but email verification failed. Please contact support.');
+          }
+          throw new Error(errorData.message || 'Internal server error. Please try again later.');
+        }
+        if (response.status === 502 || response.status === 503 || response.status === 504) {
+          throw new Error('Server temporarily unavailable. Please try again in a few minutes.');
         }
         
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
@@ -104,9 +133,9 @@ class ApiClient {
         error,
         url,
         baseURL: this.baseURL,
-        message: error?.message,
-        name: error?.name,
-        stack: error?.stack
+        message: (error as any)?.message,
+        name: (error as any)?.name,
+        stack: (error as any)?.stack
       });
       
       if (error instanceof Error) {
@@ -136,7 +165,18 @@ class ApiClient {
     const url = searchParams ? `${endpoint}?${searchParams}` : endpoint;
     console.log('API get constructed URL:', url);
     console.log('API absolute URL:', `${this.baseURL}${url}`);
-    return this.request<T>(url, { method: 'GET' });
+    
+    try {
+      const response = await this.request<T>(url, { method: 'GET' });
+      return response;
+    } catch (error) {
+      console.error(`GET request failed for ${this.baseURL}${url}:`, error);
+      // Add endpoint context to error
+      if (error instanceof Error) {
+        error.message = `[GET ${endpoint}] ${error.message}`;
+      }
+      throw error;
+    }
   }
 
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {

@@ -75,8 +75,10 @@ export default function NewArticlePage() {
   const handleDraft = () => handleSave('draft')
   const handlePublish = () => handleSave('published')
 
-  // Add debugging for localStorage
-  console.log('NewArticlePage: localStorage token exists:', !!localStorage.getItem('access_token'))
+  // Add debugging for localStorage (only in browser)
+  if (typeof window !== 'undefined') {
+    console.log('NewArticlePage: localStorage token exists:', !!localStorage.getItem('access_token'))
+  }
 
   if (isLoading) {
     return (
@@ -148,7 +150,7 @@ export default function NewArticlePage() {
           {/* Banner Upload */}
           <Card className="p-6">
             <BannerUpload
-              articleId={articleId}
+              articleId={articleId || undefined}
               currentBanner={bannerUrl}
               onBannerUploaded={setBannerUrl}
             />

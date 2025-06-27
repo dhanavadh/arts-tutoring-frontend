@@ -1,5 +1,9 @@
 // Base types
-export type UserRole = 'student' | 'teacher' | 'admin';
+export enum UserRole {
+  STUDENT = 'student',
+  TEACHER = 'teacher',
+  ADMIN = 'admin'
+}
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'ESSAY';
 
@@ -23,9 +27,11 @@ export interface Student {
   id: number;
   userId: number;
   user: User;
-  grade?: string;
-  school?: string;
-  parentContact?: string;
+  schoolGrade?: string;
+  level?: 'beginner' | 'intermediate' | 'advanced';
+  parentPhone?: string;
+  learningGoals?: string;
+  preferredSubjects?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -162,12 +168,16 @@ export interface UpdateBookingDto {
 export interface QuizQuestion {
   id: number;
   question: string;
-  type: QuestionType;
+  questionType: QuestionType; // Backend uses questionType
   options?: string[];
   correctAnswer?: string;
   correctAnswerExplanation?: string;
-  points: number;
-  order: number;
+  marks: number; // Backend uses marks
+  orderIndex: number; // Backend uses orderIndex
+  // Legacy fields for backwards compatibility
+  type?: QuestionType;
+  points?: number;
+  order?: number;
 }
 
 export interface Quiz {
@@ -175,14 +185,19 @@ export interface Quiz {
   title: string;
   description?: string;
   timeLimit?: number;
-  totalPoints: number;
+  maxAttempts?: number;
+  totalMarks: number; // Backend uses totalMarks
   isPublished: boolean;
   status: 'draft' | 'published' | 'archived';
+  isActive: boolean;
   teacherId: number;
   teacher: Teacher;
   questions: QuizQuestion[];
+  assignments?: QuizAssignment[];
   createdAt: string;
   updatedAt: string;
+  // Legacy field for backwards compatibility
+  totalPoints?: number;
 }
 
 export interface QuizAssignment {
@@ -190,9 +205,15 @@ export interface QuizAssignment {
   quizId: number;
   studentId: number;
   assignedAt: string;
+  assignedBy?: number; // Teacher ID who assigned the quiz
+  assignedByTeacher?: Teacher; // Teacher who assigned the quiz
   dueDate?: string;
+  completed: boolean;
   quiz: Quiz;
   student: Student;
+  attempts?: number; // Number of attempts made
+  completedAt?: string;
+  status?: 'assigned' | 'in_progress' | 'completed' | 'overdue';
 }
 
 export interface QuizAttempt {
@@ -206,23 +227,26 @@ export interface QuizAttempt {
   quizAssignment: QuizAssignment;
 }
 
+export interface CreateQuizQuestionDto {
+  question: string;
+  questionType: string;
+  options?: string[];
+  correctAnswer: string;
+  correctAnswerExplanation?: string;
+  marks: number;
+}
+
 export interface CreateQuizDto {
   title: string;
   description?: string;
-  subject?: string;
   timeLimit?: number;
+  maxAttempts?: number;
   status?: 'draft' | 'published' | 'archived';
-  questions: {
-    question: string;
-    questionType: string; // Backend expects 'questionType' not 'type'
-    options?: string[];
-    correctAnswer?: string;
-    correctAnswerExplanation?: string;
-    marks: number; // Backend expects 'marks' not 'points'
-  }[];
+  questions: CreateQuizQuestionDto[];
 }
 
 export interface AssignQuizDto {
+  quizId?: number;  // Optional because we'll add it in the service
   studentIds: number[];
   dueDate?: string;
 }

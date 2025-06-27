@@ -43,7 +43,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthContext: Loading user...');
       setIsLoading(true);
       
-      // Check localStorage for token temporarily
+      // Check if we're in a browser environment and localStorage is available
+      if (typeof window === 'undefined') {
+        console.log('AuthContext: Not in browser environment, skipping localStorage check');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check localStorage for token
       const token = localStorage.getItem('access_token');
       console.log('AuthContext: Has access_token in localStorage:', !!token);
       
@@ -66,9 +73,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error instanceof Error && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
         console.log('AuthContext: Authentication failed - clearing user state and invalid cookies');
         
-        // Clear invalid access_token cookie
-        document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost';
-        document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        // Clear invalid access_token cookie (only in browser)
+        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+          document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost';
+          document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        }
         
         setUser(null);
       } else {
@@ -100,9 +109,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(response.user);
       console.log('Auth context: User set successfully');
       
-      // Check localStorage immediately after login
-      const token = localStorage.getItem('access_token');
-      console.log('Auth context: Has access_token in localStorage after login:', !!token);
+      // Check localStorage immediately after login (only in browser)
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('access_token');
+        console.log('Auth context: Has access_token in localStorage after login:', !!token);
+      }
       
       // Force reload user profile to confirm authentication
       await loadUser();
@@ -146,11 +157,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const hasRole = (role: UserRole): boolean => {
-    return user?.role === role;
+    return !!user && user.role === role;
   };
 
   const hasAnyRole = (roles: UserRole[]): boolean => {
-    return user ? roles.includes(user.role) : false;
+    return !!user && roles.includes(user.role);
   };
 
   const checkAuth = async (): Promise<void> => {

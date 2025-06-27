@@ -1,4 +1,7 @@
-import { ApiError } from '../types';
+interface ApiError {
+  message: string;
+  statusCode: number;
+}
 
 export class AppError extends Error {
   public statusCode: number;

@@ -12,6 +12,7 @@ import { Button } from '../ui/button';
 import { Input, Textarea } from '../ui/input';
 import { Card, CardBody, CardHeader } from '../ui/card';
 import { Modal } from '../ui/modal';
+import { useToast } from '../ui/toast';
 
 interface ProfileData {
   id: number;
@@ -43,6 +44,7 @@ interface ProfileData {
 
 export const Profile: React.FC = () => {
   const { user, setUser } = useAuth();
+  const { addToast } = useToast();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   
   // Use the protected image hook for profile image
@@ -94,24 +96,52 @@ export const Profile: React.FC = () => {
       // First try to get profile from API
       try {
         const profile = await authService.getProfile();
-        setProfileData(profile);
+        
+        // Map User to ProfileData with proper type handling
+        const mappedProfile: ProfileData = {
+          id: profile.id,
+          email: profile.email,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          phone: profile.phone || '',
+          profileImage: profile.profileImage,
+          role: String(profile.role),
+          isActive: profile.isActive,
+          isVerified: (profile as any).isVerified ?? false,
+          createdAt: profile.createdAt,
+          updatedAt: profile.updatedAt,
+          
+          // Teacher/Student specific fields with defaults
+          subject: (profile as any).subject || '',
+          hourlyRate: (profile as any).hourlyRate || 0,
+          bio: (profile as any).bio || '',
+          yearsExperience: (profile as any).yearsExperience || 0,
+          qualifications: (profile as any).qualifications || '',
+          gradeLevel: (profile as any).gradeLevel || '',
+          school: (profile as any).school || '',
+          parentEmail: (profile as any).parentEmail || '',
+          parentPhone: (profile as any).parentPhone || '',
+          learningGoals: (profile as any).learningGoals || ''
+        };
+        
+        setProfileData(mappedProfile);
         // Ensure all form fields have default values to prevent controlled/uncontrolled warnings
         setEditForm({
-          ...profile,
-          firstName: profile.firstName || '',
-          lastName: profile.lastName || '',
-          phone: profile.phone || '',
-          profileImage: profile.profileImage || '',
-          subject: profile.subject || '',
-          qualifications: profile.qualifications || '',
-          yearsExperience: profile.yearsExperience || 0,
-          hourlyRate: profile.hourlyRate || 0,
-          bio: profile.bio || '',
-          gradeLevel: profile.gradeLevel || '',
-          school: profile.school || '',
-          parentEmail: profile.parentEmail || '',
-          parentPhone: profile.parentPhone || '',
-          learningGoals: profile.learningGoals || ''
+          ...mappedProfile,
+          firstName: mappedProfile.firstName || '',
+          lastName: mappedProfile.lastName || '',
+          phone: mappedProfile.phone || '',
+          profileImage: mappedProfile.profileImage || '',
+          subject: mappedProfile.subject || '',
+          qualifications: mappedProfile.qualifications || '',
+          yearsExperience: mappedProfile.yearsExperience || 0,
+          hourlyRate: mappedProfile.hourlyRate || 0,
+          bio: mappedProfile.bio || '',
+          gradeLevel: mappedProfile.gradeLevel || '',
+          school: mappedProfile.school || '',
+          parentEmail: mappedProfile.parentEmail || '',
+          parentPhone: mappedProfile.parentPhone || '',
+          learningGoals: mappedProfile.learningGoals || ''
         });
         return;
       } catch (apiError) {
@@ -120,7 +150,34 @@ export const Profile: React.FC = () => {
       
       // Fallback to auth context user data
       if (user) {
-        setProfileData(user);
+        // Map User to ProfileData for fallback case
+        const fallbackProfile: ProfileData = {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone || '',
+          profileImage: user.profileImage,
+          role: String(user.role),
+          isActive: user.isActive,
+          isVerified: (user as any).isVerified ?? false,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          
+          // Default values for additional fields
+          subject: (user as any).subject || '',
+          hourlyRate: (user as any).hourlyRate || 0,
+          bio: (user as any).bio || '',
+          yearsExperience: (user as any).yearsExperience || 0,
+          qualifications: (user as any).qualifications || '',
+          gradeLevel: (user as any).gradeLevel || '',
+          school: (user as any).school || '',
+          parentEmail: (user as any).parentEmail || '',
+          parentPhone: (user as any).parentPhone || '',
+          learningGoals: (user as any).learningGoals || ''
+        };
+        
+        setProfileData(fallbackProfile);
         // Ensure all form fields have default values
         setEditForm({
           ...user,
@@ -170,7 +227,7 @@ export const Profile: React.FC = () => {
         // Add role-specific fields if they exist
         ...(editForm.subject && { subject: editForm.subject }),
         ...(editForm.qualifications && { qualifications: editForm.qualifications }),
-        ...(editForm.experienceYears && { experienceYears: editForm.experienceYears }),
+        ...(editForm.yearsExperience && { yearsExperience: editForm.yearsExperience }),
         ...(editForm.hourlyRate && { hourlyRate: editForm.hourlyRate }),
         ...(editForm.bio && { bio: editForm.bio }),
         ...(editForm.gradeLevel && { gradeLevel: editForm.gradeLevel }),
@@ -182,8 +239,8 @@ export const Profile: React.FC = () => {
       
       // Remove any undefined values
       Object.keys(updateData).forEach(key => {
-        if (updateData[key] === undefined || updateData[key] === null) {
-          delete updateData[key];
+        if ((updateData as any)[key] === undefined || (updateData as any)[key] === null) {
+          delete (updateData as any)[key];
         }
       });
       
@@ -194,9 +251,9 @@ export const Profile: React.FC = () => {
       console.log('Profile save response:', response);
       
       if (response.success) {
-        const updatedProfile = response.data;
+        const updatedProfile = response.data as ProfileData;
         setProfileData(updatedProfile);
-        setUser(updatedProfile);
+        setUser(updatedProfile as any);
         
         // Update edit form with proper default values
         setEditForm({
@@ -220,7 +277,11 @@ export const Profile: React.FC = () => {
         setEditing(false);
         
         // Show success message
-        alert('Profile updated successfully!');
+        addToast({
+          type: 'success',
+          title: 'Profile Updated',
+          message: 'Your profile has been updated successfully!'
+        });
       }
     } catch (err: any) {
       console.error('Profile save error:', err);
@@ -259,7 +320,7 @@ export const Profile: React.FC = () => {
       if (response.success || response.data) {
         console.log('Full upload response:', JSON.stringify(response, null, 2));
          // The backend returns the complete updated user object in response.data
-        if (response.data && response.data.profileImage) {
+        if (response.data && (response.data as any).profileImage) {
           const updatedUserData = response.data as ProfileData;
           const imageUrl = updatedUserData.profileImage;
           
@@ -317,7 +378,11 @@ export const Profile: React.FC = () => {
       
       setShowChangePassword(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      alert('Password changed successfully!');
+      addToast({
+        type: 'success',
+        title: 'Password Changed',
+        message: 'Your password has been changed successfully!'
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to change password');
     } finally {

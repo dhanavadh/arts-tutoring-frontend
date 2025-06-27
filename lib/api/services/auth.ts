@@ -30,8 +30,8 @@ export class AuthService {
       throw new Error('Invalid login response structure');
     }
     
-    // Store token in localStorage temporarily for testing
-    if (response.data.data.accessToken) {
+    // Store token in localStorage temporarily for testing (only in browser)
+    if (response.data.data.accessToken && typeof window !== 'undefined') {
       console.log('Auth service: Storing token in localStorage');
       localStorage.setItem('access_token', response.data.data.accessToken);
     }
@@ -72,8 +72,10 @@ export class AuthService {
       `${this.endpoint}/logout`
     );
     
-    // Clear localStorage token
-    localStorage.removeItem('access_token');
+    // Clear localStorage token (only in browser)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+    }
     
     return { message: response.data.message };
   }

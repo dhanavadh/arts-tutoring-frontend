@@ -32,7 +32,7 @@ export interface ArticleEditorRef {
 
 const ArticleEditor = forwardRef<ArticleEditorRef, ArticleEditorProps>(
   ({ data, onChange, placeholder = 'Start writing your article...' }, ref) => {
-    const editorRef = useRef<EditorJS>()
+    const editorRef = useRef<EditorJS | null>(null)
     const [isReady, setIsReady] = useState(false)
 
     useImperativeHandle(ref, () => ({
@@ -114,14 +114,14 @@ const ArticleEditor = forwardRef<ArticleEditorRef, ArticleEditorProps>(
                 }
               }
             },
-            table: {
-              class: Table,
-              inlineToolbar: true,
-              config: {
-                rows: 2,
-                cols: 3,
-              }
-            },
+            // table: {
+            //   class: Table,
+            //   inlineToolbar: true,
+            //   config: {
+            //     rows: 2,
+            //     cols: 3,
+            //   }
+            // },
             quote: {
               class: Quote,
               inlineToolbar: ['marker', 'link', 'bold', 'italic', 'underline'],
@@ -160,7 +160,7 @@ const ArticleEditor = forwardRef<ArticleEditorRef, ArticleEditorProps>(
       return () => {
         if (editorRef.current && editorRef.current.destroy) {
           editorRef.current.destroy()
-          editorRef.current = undefined
+          editorRef.current = null
         }
       }
     }, [])

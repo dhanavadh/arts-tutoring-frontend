@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { quizzesService } from '@/lib/api/services/quizzes';
-import { Quiz, QuizAttempt } from '@/lib/types';
+import { Quiz, QuizAttempt, UserRole } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ProtectedRoute } from '@/lib/components/protected-route';
@@ -92,7 +92,7 @@ export default function QuizResultsPage() {
   if (!quiz) return <div className="p-6">Quiz not found</div>;
 
   return (
-    <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+    <ProtectedRoute allowedRoles={[UserRole.TEACHER, UserRole.ADMIN]}>
       <div className="p-6 max-w-6xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">{quiz.title} - Results</h1>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { quizzesService } from '@/lib/api/services/quizzes';
-import { QuizAssignment } from '@/lib/types';
+import { QuizAssignment, UserRole } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -20,7 +20,11 @@ export default function AssignedQuizzesPage() {
       try {
         setLoading(true);
         const data = await quizzesService.getAssignedQuizzes();
-        setAssignments(Array.isArray(data) ? data : []);
+        // Filter out assignments where quiz is inactive or missing
+        const validAssignments = (Array.isArray(data) ? data : []).filter(
+          (assignment) => assignment.quiz && assignment.quiz.isActive
+        );
+        setAssignments(validAssignments);
       } catch (err) {
         setError('Failed to load assigned quizzes');
         console.error('Error fetching assigned quizzes:', err);
@@ -54,7 +58,7 @@ export default function AssignedQuizzesPage() {
   if (error) return <div className="p-6 text-red-600">{error}</div>;
 
   return (
-    <ProtectedRoute allowedRoles={['student']}>
+    <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Assigned Quizzes</h1>
@@ -88,11 +92,13 @@ export default function AssignedQuizzesPage() {
                         Assigned: {formatDate(assignment.assignedAt)}
                       </span>
                       {assignment.dueDate && (
-                        <span className={`${
-                          isOverdue(assignment.dueDate) 
-                            ? 'text-red-600 font-medium' 
-                            : 'text-gray-500'
-                        }`}>
+                        <span
+                          className={`${
+                            isOverdue(assignment.dueDate)
+                              ? 'text-red-600 font-medium'
+                              : 'text-gray-500'
+                          }`}
+                        >
                           Due: {formatDate(assignment.dueDate)}
                           {isOverdue(assignment.dueDate) && ' (Overdue)'}
                         </span>
@@ -100,33 +106,35 @@ export default function AssignedQuizzesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-500">
-                        Teacher: {assignment.quiz?.teacher?.user?.firstName} {assignment.quiz?.teacher?.user?.lastName}
+                        Teacher: {assignment.quiz?.teacher?.user?.firstName}{' '}
+                        {assignment.quiz?.teacher?.user?.lastName}
                       </span>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     <Link href={`/quizzes/take/${assignment.id}`}>
-                      <Button className={`w-full ${
-                        isOverdue(assignment.dueDate) 
-                          ? 'bg-red-600 hover:bg-red-700' 
-                          : ''
-                      }`}>
+                      <Button
+                        className={`w-full ${
+                          isOverdue(assignment.dueDate) ? 'bg-red-600 hover:bg-red-700' : ''
+                        }`}
+                      >
                         {isOverdue(assignment.dueDate) ? 'Take Quiz (Overdue)' : 'Take Quiz'}
                       </Button>
                     </Link>
-                    <div className={`px-2 py-1 rounded text-xs text-center ${
-                      isOverdue(assignment.dueDate)
-                        ? 'bg-red-100 text-red-800'
+                    <div
+                      className={`px-2 py-1 rounded text-xs text-center ${
+                        isOverdue(assignment.dueDate)
+                          ? 'bg-red-100 text-red-800'
+                          : assignment.dueDate
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}
+                    >
+                      {isOverdue(assignment.dueDate)
+                        ? 'Overdue'
                         : assignment.dueDate
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {isOverdue(assignment.dueDate) 
-                        ? 'Overdue' 
-                        : assignment.dueDate 
-                        ? 'Pending' 
-                        : 'No Due Date'
-                      }
+                        ? 'Pending'
+                        : 'No Due Date'}
                     </div>
                   </div>
                 </div>
