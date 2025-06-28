@@ -6,6 +6,9 @@ import { Button } from '../ui/button';
 import { LoadingSpinner } from '../ui/loading';
 import { api } from '../../lib/api';
 import { Booking, QuizAssignment } from '../../lib/types';
+import BookingStatsWidget from '../bookings/booking-stats-widget';
+import UpcomingBookingsWidget from '../bookings/upcoming-bookings-widget';
+import QuickActionsWidget from '../bookings/quick-actions-widget';
 
 export const StudentDashboard: React.FC = () => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
@@ -62,44 +65,15 @@ export const StudentDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Booking Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Upcoming Bookings */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Upcoming Sessions</h2>
-              <Button size="sm" variant="outline">
-                <a href="/bookings">View All</a>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardBody>
-            {!upcomingBookings || upcomingBookings.length === 0 ? (
-              <p className="text-gray-500">No upcoming sessions</p>
-            ) : (
-              <div className="space-y-3">
-                {upcomingBookings.slice(0, 3).map((booking) => (
-                  <div key={booking.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                    <div className="flex justify-between">
-                      <div>
-                        <p className="font-medium">{booking.teacher.user.firstName} {booking.teacher.user.lastName}</p>
-                        <p className="text-sm text-gray-600">{booking.subject}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">
-                          {new Date(booking.startTime).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {new Date(booking.startTime).toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardBody>
-        </Card>
+        <BookingStatsWidget userRole="student" compact />
+        <QuickActionsWidget userRole="student" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Enhanced Upcoming Bookings */}
+        <UpcomingBookingsWidget userRole="student" limit={3} />
 
         {/* Assigned Quizzes */}
         <Card>
@@ -139,21 +113,15 @@ export const StudentDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Additional Quick Actions */}
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">Quick Actions</h2>
+          <h2 className="text-lg font-semibold">More Actions</h2>
         </CardHeader>
         <CardBody>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button className="h-20 flex-col">
-              <a href="/bookings/new" className="flex flex-col items-center">
-                <span className="text-2xl mb-2">📅</span>
-                Book Session
-              </a>
-            </Button>
             <Button className="h-20 flex-col" variant="outline">
-              <a href="/articles/public" className="flex flex-col items-center">
+              <a href="/articles" className="flex flex-col items-center">
                 <span className="text-2xl mb-2">📚</span>
                 Read Articles
               </a>
@@ -165,15 +133,15 @@ export const StudentDashboard: React.FC = () => {
               </a>
             </Button>
             <Button className="h-20 flex-col" variant="outline">
-              <a href="/logout" className="flex flex-col items-center">
-                <span className="text-2xl mb-2">🚪</span>
-                Logout
-              </a>
-            </Button>
-            <Button className="h-20 flex-col" variant="outline">
               <a href="/quizzes" className="flex flex-col items-center">
                 <span className="text-2xl mb-2">✏️</span>
                 Take Quiz
+              </a>
+            </Button>
+            <Button className="h-20 flex-col" variant="outline">
+              <a href="/logout" className="flex flex-col items-center">
+                <span className="text-2xl mb-2">🚪</span>
+                Logout
               </a>
             </Button>
           </div>

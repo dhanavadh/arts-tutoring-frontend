@@ -267,10 +267,7 @@ export interface AssignQuizDto {
 }
 
 export interface SubmitQuizDto {
-  answers: {
-    questionId: number;
-    answer: string;
-  }[];
+  answers: { [questionId: number]: string };
 }
 
 // Upload types

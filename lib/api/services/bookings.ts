@@ -84,6 +84,48 @@ export class BookingsService {
     const response = await apiClient.delete<{ message: string }>(`${this.endpoint}/${id}`);
     return response.data;
   }
+
+  // Availability methods
+  async createAvailability(availabilityData: any): Promise<any> {
+    const response = await apiClient.post<any>(`${this.endpoint}/availability`, availabilityData);
+    return response.data;
+  }
+
+  async getTeacherAvailability(teacherId: number): Promise<any[]> {
+    const response = await apiClient.get<any[]>(`${this.endpoint}/availability/teacher/${teacherId}`);
+    return response.data;
+  }
+
+  async getPublishedAvailability(teacherId: number): Promise<any[]> {
+    const response = await apiClient.get<any[]>(`${this.endpoint}/availability/teacher/${teacherId}/published`);
+    return response.data;
+  }
+
+  async getAvailableTimeSlots(teacherId: number, date: string): Promise<any[]> {
+    const response = await apiClient.get<any[]>(`${this.endpoint}/teacher/${teacherId}/slots`, { date });
+    return response.data;
+  }
+
+  async updateAvailability(id: number, availabilityData: any): Promise<any> {
+    const response = await apiClient.patch<any>(`${this.endpoint}/availability/${id}`, availabilityData);
+    return response.data;
+  }
+
+  async publishAvailability(id: number): Promise<any> {
+    const response = await apiClient.patch<any>(`${this.endpoint}/availability/${id}/publish`, {});
+    return response.data;
+  }
+
+  async unpublishAvailability(id: number): Promise<any> {
+    const response = await apiClient.patch<any>(`${this.endpoint}/availability/${id}/unpublish`, {});
+    return response.data;
+  }
+
+  async deleteAvailability(id: number): Promise<{ message: string }> {
+    const response = await apiClient.delete<{ message: string }>(`${this.endpoint}/availability/${id}`);
+    return response.data;
+  }
 }
 
 export const bookingsService = new BookingsService();
+export const bookingsApi = bookingsService;

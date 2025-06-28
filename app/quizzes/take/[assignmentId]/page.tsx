@@ -199,7 +199,12 @@ export default function TakeQuizPage() {
 
     setSubmitting(true);
     try {
-      const submitData = { answers };
+      const answersObject = Object.fromEntries(
+        Object.entries(answers).map(([questionId, answer]) => [Number(questionId), answer])
+      );
+      const submitData = {
+        answers: answersObject
+      };
       await quizzesService.submitQuiz(attempt.id, submitData);
       if (timerRef.current) {
         clearInterval(timerRef.current);

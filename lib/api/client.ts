@@ -207,12 +207,26 @@ class ApiClient {
   async upload<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
-    console.log('Upload request:', { url, formData });
+    // Get token from localStorage for Authorization header
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    console.log('Upload request:', { 
+      url, 
+      hasToken: !!token,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token',
+      headers 
+    });
     
     try {
       const response = await fetch(url, {
         method: 'POST',
         credentials: 'include',
+        headers,
         body: formData,
         // Don't set Content-Type header - let browser set it with boundary
       });

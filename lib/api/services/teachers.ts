@@ -14,8 +14,8 @@ export class TeachersService {
     return response.data;
   }
 
-  async getAllTeachers(): Promise<Teacher[]> {
-    const response = await apiClient.get<Teacher[]>(this.endpoint);
+  async getAllTeachers(): Promise<{ teachers: Teacher[]; total: number; page: number; totalPages: number }> {
+    const response = await apiClient.get<{ teachers: Teacher[]; total: number; page: number; totalPages: number }>(this.endpoint);
     return response.data;
   }
 
@@ -31,6 +31,11 @@ export class TeachersService {
 
   async deleteTeacher(id: number): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`${this.endpoint}/${id}`);
+    return response.data;
+  }
+
+  async getMyProfile(): Promise<Teacher> {
+    const response = await apiClient.get<Teacher>(`${this.endpoint}/me`);
     return response.data;
   }
 }

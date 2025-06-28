@@ -6,6 +6,9 @@ import { Button } from '../ui/button';
 import { LoadingSpinner } from '../ui/loading';
 import { api } from '../../lib/api';
 import { DashboardStats } from '../../lib/types';
+import BookingStatsWidget from '../bookings/booking-stats-widget';
+import UpcomingBookingsWidget from '../bookings/upcoming-bookings-widget';
+import QuickActionsWidget from '../bookings/quick-actions-widget';
 
 export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -48,6 +51,15 @@ export const AdminDashboard: React.FC = () => {
           {error}
         </div>
       )}
+
+      {/* Booking Management Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <BookingStatsWidget userRole="admin" />
+        <QuickActionsWidget userRole="admin" />
+      </div>
+
+      {/* Recent Bookings */}
+      <UpcomingBookingsWidget userRole="admin" limit={5} />
 
       {stats && (
         <>
@@ -144,7 +156,7 @@ export const AdminDashboard: React.FC = () => {
                     <a href="/admin/quizzes">Review Quizzes</a>
                   </Button>
                   <Button className="w-full" variant="outline">
-                    <a href="/admin/bookings">Manage Bookings</a>
+                    <a href="/admin/bookings">Manage All Bookings</a>
                   </Button>
                 </div>
               </CardBody>

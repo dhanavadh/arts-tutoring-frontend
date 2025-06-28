@@ -238,7 +238,6 @@ export default function QuizResultsPage() {
                               {attempt.answers && Object.keys(attempt.answers).length > 0 && (
                                 <Button 
                                   size="sm" 
-                                  variant="default"
                                   onClick={() => window.open(`/quizzes/teacher-view-result/${attempt.id}`, '_blank')}
                                 >
                                   View Full Details
@@ -249,7 +248,7 @@ export default function QuizResultsPage() {
                               <div className="grid gap-3">
                                 {quiz?.questions?.slice(0, 3).map((q) => {
                                   const answerObj = attempt.answers?.[q.id];
-                                  const studentAnswer = answerObj?.studentAnswer || answerObj;
+                                  const studentAnswer = typeof answerObj === 'object' && answerObj?.studentAnswer ? answerObj.studentAnswer : (typeof answerObj === 'string' ? answerObj : '');
                                   const correctAnswer = answerObj?.correctAnswer || q.correctAnswer;
                                   const isCorrect = studentAnswer === correctAnswer;
                                   

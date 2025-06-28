@@ -6,6 +6,9 @@ import { Button } from '../ui/button';
 import { LoadingSpinner } from '../ui/loading';
 import { api } from '../../lib/api';
 import { Booking, Article, Quiz } from '../../lib/types';
+import BookingStatsWidget from '../bookings/booking-stats-widget';
+import UpcomingBookingsWidget from '../bookings/upcoming-bookings-widget';
+import QuickActionsWidget from '../bookings/quick-actions-widget';
 
 export const TeacherDashboard: React.FC = () => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
@@ -69,37 +72,15 @@ export const TeacherDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Booking Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <BookingStatsWidget userRole="teacher" compact />
+        <QuickActionsWidget userRole="teacher" />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Today's Schedule */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Today's Schedule</h2>
-              <Button size="sm" variant="outline">
-                <a href="/schedule">View All</a>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardBody>
-            {!upcomingBookings || upcomingBookings.length === 0 ? (
-              <p className="text-gray-500">No sessions today</p>
-            ) : (
-              <div className="space-y-3">
-                {upcomingBookings.map((booking) => (
-                  <div key={booking.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                    <div>
-                      <p className="font-medium">{booking.student.user.firstName} {booking.student.user.lastName}</p>
-                      <p className="text-sm text-gray-600">{booking.subject}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(booking.startTime).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardBody>
-        </Card>
+        {/* Enhanced Today's Schedule */}
+        <UpcomingBookingsWidget userRole="teacher" limit={5} />
 
         {/* Recent Articles */}
         <Card>
@@ -168,10 +149,10 @@ export const TeacherDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Additional Actions */}
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">Quick Actions</h2>
+          <h2 className="text-lg font-semibold">Content & Tools</h2>
         </CardHeader>
         <CardBody>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -182,15 +163,9 @@ export const TeacherDashboard: React.FC = () => {
               </a>
             </Button>
             <Button className="h-20 flex-col" variant="outline">
-              <a href="/quiz-management/new" className="flex flex-col items-center">
+              <a href="/quizzes/create" className="flex flex-col items-center">
                 <span className="text-2xl mb-2">📝</span>
                 Create Quiz
-              </a>
-            </Button>
-            <Button className="h-20 flex-col" variant="outline">
-              <a href="/schedule" className="flex flex-col items-center">
-                <span className="text-2xl mb-2">📅</span>
-                View Schedule
               </a>
             </Button>
             <Button className="h-20 flex-col" variant="outline">

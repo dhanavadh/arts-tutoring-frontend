@@ -315,6 +315,14 @@ export const Profile: React.FC = () => {
       const formData = new FormData();
       formData.append('image', file);
       
+      console.log('Uploading image with details:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        endpoint: `${API_CONFIG.ENDPOINTS.USERS}/profile/upload-image`,
+        hasToken: !!localStorage.getItem('access_token')
+      });
+      
       const response = await apiClient.upload(`${API_CONFIG.ENDPOINTS.USERS}/profile/upload-image`, formData);
       
       if (response.success || response.data) {
