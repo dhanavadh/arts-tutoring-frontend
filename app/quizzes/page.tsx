@@ -54,6 +54,20 @@ function StudentQuizDashboard() {
     };
 
     fetchAssignedQuizzes();
+    
+    // Check for submitted parameter and reload data if present
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('submitted') === 'true') {
+        // Force refresh after a small delay to ensure backend data is updated
+        setTimeout(() => {
+          fetchAssignedQuizzes();
+        }, 1000);
+        
+        // Clean up URL parameter after refreshing
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, []);
 
   const isOverdue = (dueDate?: string) => {
@@ -183,7 +197,7 @@ function StudentQuizDashboard() {
           <Card className="p-4 bg-green-50 border-green-200">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {assignments.filter(a => a.status === 'completed' || a.completedAt).length}
+                {assignments.filter(a => a.status === 'completed').length}
               </div>
               <div className="text-sm text-green-600">Completed</div>
             </div>
@@ -240,7 +254,7 @@ function StudentQuizDashboard() {
                           Due Soon
                         </span>
                       )}
-                      {(assignment.status === 'completed' || assignment.completedAt) && (
+                      {assignment.status === 'completed' && (
                         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                           Completed
                         </span>
@@ -292,54 +306,67 @@ function StudentQuizDashboard() {
                     </div>
                   </div>
                   <div className="ml-6 flex flex-col gap-2">
-                    {/* Button logic for submitted view */}
-                    {isSubmittedView && assignment.completedAt && (
-                      <>
+                    {/* Show completion and attempts info */}
+                    {assignment.status === 'completed' && (
+                      <div className="text-center">
                         <Button
                           size="lg"
-                          className={`w-full min-w-[120px] bg-green-600 hover:bg-green-700`}
+                          className="w-full min-w-[120px] bg-green-600 hover:bg-green-700"
                           disabled
                         >
                           Completed
                         </Button>
+                        {!unlimitedAttempts && (
+                          <div className="text-center text-xs text-gray-500 mt-1">
+                            Used {attemptsMade} of {maxAttempts} attempts
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Show retake options for completed quizzes */}
+                    {assignment.status === 'completed' && (
+                      <div className="mt-2">
                         {unlimitedAttempts ? (
                           <Link href={`/quizzes/take/${assignment.id}`}>
-                            <Button size="sm" variant="outline" className="mt-2 w-full">
-                              Do Quiz Again
+                            <Button size="sm" variant="outline" className="w-full">
+                              Retake Quiz
                             </Button>
                           </Link>
                         ) : attemptsLeft && attemptsLeft > 0 ? (
                           <Link href={`/quizzes/take/${assignment.id}`}>
-                            <Button size="sm" variant="outline" className="mt-2 w-full">
-                              Do Quiz Again ({attemptsLeft} left)
+                            <Button size="sm" variant="outline" className="w-full">
+                              Retake ({attemptsLeft} attempts left)
                             </Button>
                           </Link>
                         ) : (
-                          <Button size="sm" variant="outline" className="mt-2 w-full" disabled>
+                          <Button size="sm" variant="outline" className="w-full" disabled>
                             No Attempts Left
                           </Button>
                         )}
-                      </>
+                      </div>
                     )}
-                    {/* Default button logic */}
-                    {(!isSubmittedView || !assignment.completedAt) && (
-                      <Link href={`/quizzes/take/${assignment.id}`}>
-                        <Button
-                          size="lg"
-                          className={`w-full min-w-[120px] ${
-                            assignment.completedAt ? 'bg-green-600 hover:bg-green-700' :
-                            priority === 'overdue' ? 'bg-red-600 hover:bg-red-700' :
-                            priority === 'high' ? 'bg-yellow-600 hover:bg-yellow-700' :
-                            'bg-blue-600 hover:bg-blue-700'
-                          }`}
-                        >
-                          {assignment.completedAt ? 'Review' : 'Take Quiz'}
-                        </Button>
-                      </Link>
-                    )}
-                    {assignment.completedAt && (
-                      <div className="text-center text-sm font-medium text-green-600">
-                        Completed on {formatDate(assignment.completedAt)}
+
+                    {/* Show take quiz button for non-completed assignments */}
+                    {assignment.status !== 'completed' && (
+                      <div className="text-center">
+                        <Link href={`/quizzes/take/${assignment.id}`}>
+                          <Button
+                            size="lg"
+                            className={`w-full min-w-[120px] ${
+                              priority === 'overdue' ? 'bg-red-600 hover:bg-red-700' :
+                              priority === 'high' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                              'bg-blue-600 hover:bg-blue-700'
+                            }`}
+                          >
+                            Take Quiz
+                          </Button>
+                        </Link>
+                        {!unlimitedAttempts && maxAttempts && (
+                          <div className="text-center text-xs text-gray-500 mt-1">
+                            {attemptsMade} of {maxAttempts} attempts used
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -616,7 +643,7 @@ function TeacherQuizDashboard() {
                         </span>
                       </div>
                       <div className="text-xs">
-                        {quiz.assignments.filter(a => a.completed || a.completedAt).length} completed
+                        {quiz.assignments.filter(a => a.status === 'completed').length} completed
                       </div>
                     </div>
                   </div>

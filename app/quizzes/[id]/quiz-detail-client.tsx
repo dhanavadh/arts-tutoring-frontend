@@ -613,8 +613,8 @@ export default function QuizDetailClient({ id }: { id: string }) {
         </div>
       </Card>
 
-      {/* Button to see results (visible to teacher/admin) */}
-      {(user?.role === 'admin' || user?.role === 'teacher') && quiz && (
+      {/* Button to see results (visible to quiz owner) */}
+      {canEditQuiz(quiz) && quiz && (
         <div className="mb-4 flex justify-end">
           <Button
             className="bg-green-600 hover:bg-green-700 text-white"
@@ -792,10 +792,10 @@ export default function QuizDetailClient({ id }: { id: string }) {
                     </div>
                   )}
                 </div>
-                {selectedStudentModal.completedAt && (
+                {selectedStudentModal.status === 'completed' && (
                   <div className="mt-2">
-                    <span className="text-gray-600 text-sm">Completed on:</span>
-                    <p className="font-medium text-sm">{formatDate(selectedStudentModal.completedAt)}</p>
+                    <span className="text-gray-600 text-sm">Status:</span>
+                    <p className="font-medium text-sm text-green-600">Completed</p>
                   </div>
                 )}
               </div>
