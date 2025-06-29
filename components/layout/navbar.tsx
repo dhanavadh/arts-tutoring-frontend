@@ -16,12 +16,13 @@ export const Navbar: React.FC = () => {
   const { imageUrl: profileImageUrl, loading: imageLoading } = useProtectedImage(user?.profileImage);
 
   return (
-    <nav className="bg-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4">
+    <nav className="bg-white shadow-lg sticky top-0 z-50">
+      <div className="max-w-[1024px] mx-auto px-4">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold text-blue-600">
-              Arts Tutor Platform
+            <Link href="/" className='h-12 leading-3 pl-4 border-l-4 border-amber-500' >
+              <p className="text-xl font-bold text-neutral-600">Beam</p>
+              <p>by Arts students</p>
             </Link>
 
             <div className="ml-10 flex items-baseline space-x-4">

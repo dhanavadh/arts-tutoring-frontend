@@ -9,11 +9,11 @@ export default function Home() {
   
   return (
     <AppLayout>
-      
-      <div className="max-w-4xl mx-auto font-thai">
+      {/* Hero Section */}
+      <div className="max-w-[1080px] font-thai border-l-2 pl-16 border-neutral-200">
         <div className='flex flex-col my-8 gap-4 justify-start items-start'>
-          <p className='text-7xl my-4'>เรียนภาษากับ NPJT Academy</p>
-          <div className="text-5xl font-bold text-blue-600 mb-4 h-8 "> &gt;
+          <p className='text-7xl my-4'>เรียนภาษากับ <br></br> Beam Academy</p>
+          <div className="text-5xl font-bold text-amber-600 mb-4 h-8 "> &gt;
             <Typewriter 
               texts={[
                 'สอนโดยนิสิตคณะอักษร จุฬาฯ',
@@ -26,28 +26,20 @@ export default function Home() {
               delayBetweenTexts={2000}
             />
           </div>
-      </div>
-        {/* Hero Section */}
-        <div className="text-center py-12">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Arts Tutor Platform
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Connect with expert arts teachers, manage your learning journey, and excel in your artistic pursuits.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
-              <Button size="lg" className="w-full sm:w-auto">
-                Get Started
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Sign In
-              </Button>
-            </Link>
-          </div>
         </div>
+        <div className="flex flex-col sm:flex-row gap-4 justify-start items-start">
+          <Link href="/courses">
+            <Button size="lg" className="w-full sm:w-auto">
+              เริ่มเรียนเลย
+            </Button>
+          </Link>
+          <Link href="/login">
+            <Button size="lg" variant="outline" className="w-full sm:w-auto">
+              เข้าสู่ระบบ
+            </Button>
+          </Link>
+        </div>
+        
 
         {/* Features Section */}
         <div className="grid md:grid-cols-3 gap-8 py-12">
