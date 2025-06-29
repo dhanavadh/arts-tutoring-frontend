@@ -2,11 +2,31 @@ import Link from 'next/link';
 import { AppLayout } from '../components/layout/app-layout';
 import { Button } from '../components/ui/button';
 import { Card, CardBody, CardHeader } from '../components/ui/card';
+import { Typewriter } from '../components/ui/typewriter';
+
 
 export default function Home() {
+  
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto">
+      
+      <div className="max-w-4xl mx-auto font-thai">
+        <div className='flex flex-col my-8 gap-4 justify-start items-start'>
+          <p className='text-7xl my-4'>เรียนภาษากับ NPJT Academy</p>
+          <div className="text-5xl font-bold text-blue-600 mb-4 h-8 "> &gt;
+            <Typewriter 
+              texts={[
+                'สอนโดยนิสิตคณะอักษร จุฬาฯ',
+                'ควิซพร้อมคำอธิบายอย่างละเอียด',
+                'พร้อมปรึกษาฟรี',
+                'เลือกเรียนได้หลากหลายภาษา',                
+              ]}
+              typeSpeed={80}
+              deleteSpeed={40}
+              delayBetweenTexts={2000}
+            />
+          </div>
+      </div>
         {/* Hero Section */}
         <div className="text-center py-12">
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
