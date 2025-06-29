@@ -28,6 +28,9 @@ interface ProfileData {
   createdAt: string;
   updatedAt: string;
   
+  // Social media/contact fields
+  websiteUrl?: string;
+  
   // Teacher specific fields
   subject?: string;
   hourlyRate?: number;
@@ -69,6 +72,7 @@ export const Profile: React.FC = () => {
     lastName: '',
     phone: '',
     profileImage: '',
+    websiteUrl: '',
     subject: '',
     qualifications: '',
     yearsExperience: 0,
@@ -112,6 +116,9 @@ export const Profile: React.FC = () => {
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt,
           
+          // Social media/contact fields
+          websiteUrl: (profile as any).websiteUrl || '',
+          
           // Default values for role-specific fields
           subject: '',
           hourlyRate: 0,
@@ -153,6 +160,7 @@ export const Profile: React.FC = () => {
           lastName: mappedProfile.lastName || '',
           phone: mappedProfile.phone || '',
           profileImage: mappedProfile.profileImage || '',
+          websiteUrl: mappedProfile.websiteUrl || '',
           subject: mappedProfile.subject || '',
           qualifications: mappedProfile.qualifications || '',
           yearsExperience: mappedProfile.yearsExperience || 0,
@@ -206,6 +214,7 @@ export const Profile: React.FC = () => {
           lastName: user.lastName || '',
           phone: user.phone || '',
           profileImage: user.profileImage || '',
+          websiteUrl: (user as any).websiteUrl || '',
           subject: (user as any).subject || '',
           qualifications: (user as any).qualifications || '',
           yearsExperience: (user as any).yearsExperience || 0,
@@ -240,12 +249,24 @@ export const Profile: React.FC = () => {
       setError('');
       
       // Separate user profile fields from role-specific fields
-      const userProfileData = {
+      const userProfileData: any = {
         firstName: editForm.firstName,
         lastName: editForm.lastName,
         phone: editForm.phone,
         profileImage: editForm.profileImage
       };
+
+      // Only include social media URLs if they are not empty and look like valid URLs
+      const socialMediaFields = {
+        websiteUrl: editForm.websiteUrl
+      };
+
+      // Add social media fields only if they have values and look like URLs
+      Object.entries(socialMediaFields).forEach(([key, value]) => {
+        if (value && value.trim() && (value.trim().startsWith('http://') || value.trim().startsWith('https://'))) {
+          userProfileData[key] = value.trim();
+        }
+      });
       
       // Remove any undefined values from user profile data
       Object.keys(userProfileData).forEach(key => {
@@ -457,6 +478,7 @@ export const Profile: React.FC = () => {
                     lastName: profileData.lastName || '',
                     phone: profileData.phone || '',
                     profileImage: profileData.profileImage || '',
+                    websiteUrl: profileData.websiteUrl || '',
                     subject: profileData.subject || '',
                     qualifications: profileData.qualifications || '',
                     yearsExperience: profileData.yearsExperience || 0,
@@ -578,6 +600,42 @@ export const Profile: React.FC = () => {
                 readOnly={!editing}
                 placeholder="Enter phone number"
               />
+            </CardBody>
+          </Card>
+
+          {/* Contact Information */}
+          <Card>
+            <CardHeader>
+              <h2 className="text-xl font-semibold">Contact Information</h2>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              <Input
+                label="LineURL"
+                type="url"
+                value={editing ? editForm.websiteUrl || '' : profileData.websiteUrl || ''}
+                onChange={(e) => handleEditChange('websiteUrl', e.target.value)}
+                readOnly={!editing}
+                placeholder="https://line.me/ti/p/your-line-id"
+                helperText={editing ? "Include http:// or https://" : undefined}
+              />
+              {!editing && profileData.websiteUrl && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Contact Link</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={profileData.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M13.4 12L10.1 8.7l1.4-1.4 4.6 4.6-4.6 4.6-1.4-1.4L13.4 12zM7.8 12L4.5 8.7l1.4-1.4 4.6 4.6-4.6 4.6-1.4-1.4L7.8 12z"/>
+                      </svg>
+                      Line
+                    </a>
+                  </div>
+                </div>
+              )}
             </CardBody>
           </Card>
 

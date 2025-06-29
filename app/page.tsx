@@ -83,6 +83,44 @@ export default function Home() {
           </Card>
         </div>
 
+        {/* Browse Section */}
+        <div className="py-12">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">
+            Explore Our Platform
+          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Link href="/courses">
+              <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer">
+                <CardBody className="text-center p-6">
+                  <div className="text-4xl mb-4">📚</div>
+                  <h3 className="text-xl font-semibold mb-2">Browse Courses</h3>
+                  <p className="text-gray-600">Discover comprehensive art courses taught by expert instructors</p>
+                </CardBody>
+              </Card>
+            </Link>
+
+            <Link href="/teachers">
+              <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer">
+                <CardBody className="text-center p-6">
+                  <div className="text-4xl mb-4">👩‍🎨</div>
+                  <h3 className="text-xl font-semibold mb-2">Meet Our Teachers</h3>
+                  <p className="text-gray-600">Connect with talented and experienced art educators</p>
+                </CardBody>
+              </Card>
+            </Link>
+
+            <Link href="/articles">
+              <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer">
+                <CardBody className="text-center p-6">
+                  <div className="text-4xl mb-4">📰</div>
+                  <h3 className="text-xl font-semibold mb-2">Read Articles</h3>
+                  <p className="text-gray-600">Learn from educational articles and tutorials</p>
+                </CardBody>
+              </Card>
+            </Link>
+          </div>
+        </div>
+
         {/* CTA Section */}
         <div className="text-center py-12 bg-blue-50 rounded-lg">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">

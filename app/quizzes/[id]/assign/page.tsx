@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { ProtectedRoute } from '@/lib/components/protected-route';
 
 export default function AssignQuizPage() {
@@ -24,6 +25,7 @@ export default function AssignQuizPage() {
   const [dueDate, setDueDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
+  const [unassigning, setUnassigning] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -156,6 +158,51 @@ export default function AssignQuizPage() {
     }
   };
 
+  const handleUnassignStudent = async (studentId: number) => {
+    if (!confirm('Are you sure you want to unassign this student from the quiz? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setUnassigning(studentId);
+      setError(null);
+      
+      const result = await quizzesService.removeQuizAssignment(quizId, studentId);
+      
+      // Remove from assigned students list
+      setAssignedStudents(prev => prev.filter(id => id !== studentId));
+      
+      // Check if quiz was automatically unpublished
+      if (result.message.includes('automatically unpublished')) {
+        // Update quiz status if it was changed
+        if (quiz) {
+          setQuiz({ ...quiz, status: 'draft' });
+        }
+        
+        addToast({
+          type: 'warning',
+          title: 'Student Unassigned & Quiz Unpublished',
+          message: 'Student unassigned successfully. Quiz has been automatically unpublished since no students remain.',
+          duration: 6000
+        });
+      } else {
+        addToast({
+          type: 'success',
+          message: 'Student successfully unassigned from quiz'
+        });
+      }
+    } catch (err: any) {
+      console.error('Error unassigning student:', err);
+      setError(err.message || 'Failed to unassign student');
+      addToast({
+        type: 'error',
+        message: 'Failed to unassign student. Please try again.'
+      });
+    } finally {
+      setUnassigning(null);
+    }
+  };
+
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!quiz) return <div className="p-6">Quiz not found</div>;
@@ -238,22 +285,25 @@ export default function AssignQuizPage() {
             <h2 className="text-xl font-semibold mb-4">Assignment Settings</h2>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">Due Date (Optional)</label>
-              <Input
-                type="datetime-local"
+              <DateTimePicker
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={setDueDate}
+                placeholder="Select due date and time"
+                minDate={new Date()}
                 className="max-w-sm"
               />
+              <p className="text-xs text-gray-500 mt-1">Cannot select a date in the past</p>
             </div>
           </Card>
 
           <Card className="p-6">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-xl font-semibold">Select Students</h2>
+                <h2 className="text-xl font-semibold">Manage Student Assignments</h2>
                 {assignedStudents.length > 0 && (
                   <p className="text-sm text-green-600 mt-1">
-                    {assignedStudents.length} student{assignedStudents.length !== 1 ? 's' : ''} already assigned
+                    {assignedStudents.length} student{assignedStudents.length !== 1 ? 's' : ''} currently assigned
+                    <span className="text-gray-500 ml-1">(click "Unassign" to remove)</span>
                   </p>
                 )}
               </div>
@@ -277,51 +327,85 @@ export default function AssignQuizPage() {
                   const isSelected = selectedStudents.includes(student.id);
                   
                   return (
-                    <label
+                    <div
                       key={student.id}
-                      className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
+                      className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
                         isAlreadyAssigned 
-                          ? 'bg-green-50 border-green-200 cursor-not-allowed' 
-                          : 'cursor-pointer hover:bg-gray-50'
+                          ? 'bg-green-50 border-green-200' 
+                          : 'hover:bg-gray-50'
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isAlreadyAssigned || isSelected}
-                        onChange={() => handleStudentToggle(student.id)}
-                        disabled={isAlreadyAssigned}
-                        className={`w-4 h-4 ${isAlreadyAssigned ? 'opacity-50' : ''}`}
-                      />
-                      <div className="flex-1">
-                        <div className={`font-medium flex items-center gap-2 ${
-                          isAlreadyAssigned ? 'text-green-700' : ''
-                        }`}>
-                          {student.user.firstName} {student.user.lastName}
-                          {isAlreadyAssigned && (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                              Already Assigned
-                            </span>
+                      <label className="flex items-center space-x-3 flex-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isAlreadyAssigned || isSelected}
+                          onChange={() => handleStudentToggle(student.id)}
+                          disabled={isAlreadyAssigned}
+                          className={`w-4 h-4 ${isAlreadyAssigned ? 'opacity-50' : ''}`}
+                        />
+                        <div className="flex-1">
+                          <div className={`font-medium flex items-center gap-2 ${
+                            isAlreadyAssigned ? 'text-green-700' : ''
+                          }`}>
+                            {student.user.firstName} {student.user.lastName}
+                            {isAlreadyAssigned && (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                Already Assigned
+                              </span>
+                            )}
+                          </div>
+                          <div className={`text-sm ${
+                            isAlreadyAssigned ? 'text-green-600' : 'text-gray-500'
+                          }`}>
+                            {student.user.email}
+                            {student.schoolGrade && ` • Grade ${student.schoolGrade}`}
+                            {student.level && ` • Level: ${student.level}`}
+                          </div>
+                        </div>
+                      </label>
+                      
+                      {isAlreadyAssigned && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUnassignStudent(student.id)}
+                          disabled={unassigning === student.id}
+                          className="ml-3 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        >
+                          {unassigning === student.id ? (
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 border border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                              <span>Removing...</span>
+                            </div>
+                          ) : (
+                            'Unassign'
                           )}
-                        </div>
-                        <div className={`text-sm ${
-                          isAlreadyAssigned ? 'text-green-600' : 'text-gray-500'
-                        }`}>
-                          {student.user.email}
-                          {student.schoolGrade && ` • Grade ${student.schoolGrade}`}
-                          {student.level && ` • Level: ${student.level}`}
-                        </div>
-                      </div>
-                    </label>
+                        </Button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             )}
 
             {selectedStudents.length > 0 && (
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  {selectedStudents.length} new student{selectedStudents.length !== 1 ? 's' : ''} selected for assignment
-                </p>
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">
+                      {selectedStudents.length} new student{selectedStudents.length !== 1 ? 's' : ''} selected for assignment
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Click the "Assign" button below to save your changes
+                    </p>
+                  </div>
+                  <div className="text-blue-600">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             )}
             
@@ -344,11 +428,17 @@ export default function AssignQuizPage() {
             </Button>
             <Button
               type="submit"
-              disabled={assigning || selectedStudents.length === 0 || students.filter(s => !assignedStudents.includes(s.id)).length === 0}
+              disabled={assigning || selectedStudents.length === 0}
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
             >
-              {assigning ? 'Assigning...' : 
-               students.filter(s => !assignedStudents.includes(s.id)).length === 0 ? 'All Students Assigned' :
-               `Assign to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? 's' : ''}`}
+              {assigning ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Assigning...</span>
+                </div>
+              ) : (
+                `Assign to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? 's' : ''}`
+              )}
             </Button>
           </div>
         </form>

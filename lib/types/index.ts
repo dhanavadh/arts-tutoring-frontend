@@ -17,6 +17,7 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   profileImage?: string;
+  websiteUrl?: string;
   teacher?: any;
   student?: any;
   createdAt: string;
@@ -198,6 +199,8 @@ export interface Quiz {
   isActive: boolean;
   teacherId: number;
   teacher: Teacher;
+  createdBy?: number;
+  creator?: User;
   questions: QuizQuestion[];
   assignments?: QuizAssignment[];
   createdAt: string;

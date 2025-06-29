@@ -25,10 +25,12 @@ export const CourseBannerUpload: React.FC<CourseBannerUploadProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentBanner || null)
   const [error, setError] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [hasUploaded, setHasUploaded] = useState(false) // Track if file has been uploaded
 
   const handleFileSelect = async (file: File) => {
     setError(null)
     setSelectedFile(file)
+    setHasUploaded(false) // Reset upload flag when new file is selected
 
     // Create preview
     const preview = URL.createObjectURL(file)
@@ -82,6 +84,7 @@ export const CourseBannerUpload: React.FC<CourseBannerUploadProps> = ({
       if (imageUrl && imageUrl.trim() !== '') {
         console.log('Setting course banner URL to:', imageUrl);
         onBannerUploaded(imageUrl);
+        setHasUploaded(true); // Mark as uploaded
       } else {
         console.error('Could not find featuredImage in response or it was empty');
         console.error('Full response data:', response.data);
@@ -99,13 +102,15 @@ export const CourseBannerUpload: React.FC<CourseBannerUploadProps> = ({
 
   // Effect to upload when courseId becomes available
   useEffect(() => {
-    if (courseId && selectedFile && !isUploading) {
+    if (courseId && selectedFile && !hasUploaded && !isUploading) {
       uploadToServer(selectedFile)
     }
-  }, [courseId, selectedFile, isUploading])
+  }, [courseId, selectedFile, hasUploaded])
 
   const removeBanner = () => {
     setPreviewUrl(null)
+    setSelectedFile(null)
+    setHasUploaded(false)
     onBannerUploaded('')
   }
 
@@ -129,7 +134,11 @@ export const CourseBannerUpload: React.FC<CourseBannerUploadProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPreviewUrl(null)}
+              onClick={() => {
+                setPreviewUrl(null)
+                setSelectedFile(null)
+                setHasUploaded(false)
+              }}
               disabled={isUploading}
             >
               Change

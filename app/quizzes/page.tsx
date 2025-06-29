@@ -43,8 +43,6 @@ function StudentQuizDashboard() {
         const validAssignments = (Array.isArray(data) ? data : []).filter(
           (assignment) => assignment.quiz && assignment.quiz.isActive
         );
-        console.log('Fetched assignments:', data);
-        console.log('Filtered valid assignments:', validAssignments);
         setAssignments(validAssignments);
       } catch (err) {
         setError('Failed to load assigned quizzes');
@@ -88,7 +86,7 @@ function StudentQuizDashboard() {
     // Check due date if no explicit status
     if (!assignment.dueDate) return 'low';
     const timeRemaining = getTimeRemaining(assignment.dueDate);
-    if (timeRemaining === 'Overdue' ) return 'overdue';
+    if (timeRemaining === 'Overdue') return 'overdue';
     if (timeRemaining === 'Due soon' || timeRemaining?.includes('hour')) return 'high';
     if (timeRemaining?.includes('1 day')) return 'medium';
     return 'low';
@@ -194,9 +192,6 @@ function StudentQuizDashboard() {
       )}
 
       {/* Quizzes List */}
-      <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded">
-        Debug: Rendering {assignments.length} assignments. If you see this, assignments are being processed.
-      </div>
       {assignments.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="max-w-md mx-auto">
@@ -300,78 +295,51 @@ function StudentQuizDashboard() {
                     {/* Button logic for submitted view */}
                     {isSubmittedView && assignment.completedAt && (
                       <>
-                        <div className="flex flex-col items-center mb-2">
-                          <span className="inline-block px-3 py-1 bg-green-600 text-white text-sm font-bold rounded-full mb-2">
-                            Completed
-                          </span>
-                          {unlimitedAttempts ? (
-                            <Link href={`/quizzes/take/${assignment.id}`}>
-                              <Button size="sm" variant="outline" className="w-full">
-                                Do Quiz Again
-                              </Button>
-                            </Link>
-                          ) : attemptsLeft && attemptsLeft > 0 ? (
-                            <Link href={`/quizzes/take/${assignment.id}`}>
-                              <Button size="sm" variant="outline" className="w-full">
-                                Do Quiz Again ({attemptsLeft} left)
-                              </Button>
-                            </Link>
-                          ) : (
-                            <Button size="sm" variant="outline" className="w-full" disabled>
-                              No Attempts Left
+                        <Button
+                          size="lg"
+                          className={`w-full min-w-[120px] bg-green-600 hover:bg-green-700`}
+                          disabled
+                        >
+                          Completed
+                        </Button>
+                        {unlimitedAttempts ? (
+                          <Link href={`/quizzes/take/${assignment.id}`}>
+                            <Button size="sm" variant="outline" className="mt-2 w-full">
+                              Do Quiz Again
                             </Button>
-                          )}
-                        </div>
-                        <div className="text-center text-xs text-gray-500">
-                          Completed on {formatDate(assignment.completedAt)}
-                        </div>
+                          </Link>
+                        ) : attemptsLeft && attemptsLeft > 0 ? (
+                          <Link href={`/quizzes/take/${assignment.id}`}>
+                            <Button size="sm" variant="outline" className="mt-2 w-full">
+                              Do Quiz Again ({attemptsLeft} left)
+                            </Button>
+                          </Link>
+                        ) : (
+                          <Button size="sm" variant="outline" className="mt-2 w-full" disabled>
+                            No Attempts Left
+                          </Button>
+                        )}
                       </>
                     )}
-                    {/* Main action button logic for quiz assignment */}
-                    {assignment.completedAt || assignment.status === 'completed' ? (
-                      unlimitedAttempts ? (
-                        <Link href={`/quizzes/take/${assignment.id}`}>
-                          <Button size="lg" className="w-full min-w-[120px] bg-green-600 hover:bg-green-700">
-                            Do Quiz Again
-                          </Button>
-                        </Link>
-                      ) : attemptsLeft && attemptsLeft > 0 ? (
-                        <Link href={`/quizzes/take/${assignment.id}`}>
-                          <Button size="lg" className="w-full min-w-[120px] bg-green-600 hover:bg-green-700">
-                            Do Quiz Again ({attemptsLeft} left)
-                          </Button>
-                        </Link>
-                      ) : (
-                        <Button size="lg" className="w-full min-w-[120px] bg-gray-400 cursor-not-allowed" disabled>
-                          No Attempts Left
-                        </Button>
-                      )
-                    ) : (
+                    {/* Default button logic */}
+                    {(!isSubmittedView || !assignment.completedAt) && (
                       <Link href={`/quizzes/take/${assignment.id}`}>
                         <Button
                           size="lg"
                           className={`w-full min-w-[120px] ${
+                            assignment.completedAt ? 'bg-green-600 hover:bg-green-700' :
                             priority === 'overdue' ? 'bg-red-600 hover:bg-red-700' :
                             priority === 'high' ? 'bg-yellow-600 hover:bg-yellow-700' :
                             'bg-blue-600 hover:bg-blue-700'
                           }`}
                         >
-                          Take Quiz
+                          {assignment.completedAt ? 'Review' : 'Take Quiz'}
                         </Button>
                       </Link>
                     )}
-                    {/* View Result button for completed quizzes */}
-                    {(assignment.completedAt || assignment.status === 'completed') && (
-                      <Link href={`/quizzes/result/${assignment.id}`}>
-                        <Button size="sm" variant="outline" className="w-full mt-2">
-                          View Result
-                        </Button>
-                      </Link>
-                    )}
-                    {/* Completed badge and date */}
                     {assignment.completedAt && (
-                      <div className="text-center text-xs text-green-700 font-bold mt-2">
-                        Completed on {assignment.completedAt ? formatDate(assignment.completedAt) : ''}
+                      <div className="text-center text-sm font-medium text-green-600">
+                        Completed on {formatDate(assignment.completedAt)}
                       </div>
                     )}
                   </div>
@@ -559,23 +527,142 @@ function TeacherQuizDashboard() {
               onClick={() => handleQuizClick(quiz)}
             >
               <Card className="p-6 hover:shadow-lg transition-shadow">
-                <h2 className="text-xl font-bold mb-2">{quiz.title}</h2>
-                <p className="text-gray-600 mb-4">{quiz.description}</p>
-                <div className="text-sm text-gray-500 mb-4">
-                  <p>Created: {formatDate(quiz.createdAt)}</p>
-                  <p>Questions: {quiz.questions?.length || 0}</p>
-                  <p>Total Points: {quiz.totalPoints || 0}</p>
+                <div className="flex items-start justify-between mb-3">
+                  <h2 className="text-xl font-bold text-gray-900">{quiz.title}</h2>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      quiz.isPublished 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {quiz.isPublished ? 'Published' : 'Draft'}
+                    </span>
+                    {quiz.isActive && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                        Active
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-end gap-2">
-                  {(user?.role === UserRole.TEACHER || user?.role === UserRole.ADMIN) && (
-                    <Button 
-                      variant="outline" 
-                      className="text-red-600 hover:bg-red-50"
-                      onClick={(e) => handleDeleteQuiz(e, quiz)}
-                    >
-                      Delete
-                    </Button>
+                
+                {quiz.description && (
+                  <p className="text-gray-600 mb-4 line-clamp-2">{quiz.description}</p>
+                )}
+                
+                {/* Creator Information */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="text-gray-700">
+                      Created by: <span className="font-medium">
+                        {quiz.creator ? 
+                          `${quiz.creator.firstName} ${quiz.creator.lastName}` :
+                          quiz.teacher?.user ? 
+                            `${quiz.teacher.user.firstName} ${quiz.teacher.user.lastName}` :
+                            quiz.teacherId ? 'Teacher' : 'Unknown'
+                        }
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm mt-1">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4a1 1 0 001 1h2a1 1 0 011 1v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9a1 1 0 011-1h2a1 1 0 001-1z" />
+                    </svg>
+                    <span className="text-gray-500">
+                      {formatDate(quiz.createdAt)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quiz Statistics */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="text-center p-2 bg-blue-50 rounded">
+                    <div className="text-lg font-bold text-blue-600">{quiz.questions?.length || 0}</div>
+                    <div className="text-xs text-blue-600">Questions</div>
+                  </div>
+                  <div className="text-center p-2 bg-purple-50 rounded">
+                    <div className="text-lg font-bold text-purple-600">{quiz.totalPoints || quiz.totalMarks || 0}</div>
+                    <div className="text-xs text-purple-600">Total Points</div>
+                  </div>
+                </div>
+
+                {/* Assignment Statistics */}
+                {quiz.assignments && quiz.assignments.length > 0 && (
+                  <div className="mb-4 p-3 bg-green-50 rounded-lg">
+                    <div className="text-sm text-green-700">
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span className="font-medium">
+                          {quiz.assignments.length} student{quiz.assignments.length !== 1 ? 's' : ''} assigned
+                        </span>
+                      </div>
+                      <div className="text-xs">
+                        {quiz.assignments.filter(a => a.completed || a.completedAt).length} completed
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quiz Settings */}
+                <div className="text-sm text-gray-500 mb-4 space-y-1">
+                  {quiz.timeLimit && (
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Time limit: {quiz.timeLimit} minutes</span>
+                    </div>
                   )}
+                  {quiz.maxAttempts && (
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>Max attempts: {quiz.maxAttempts}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <div className="flex gap-2">
+                    {user?.role === UserRole.TEACHER && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-blue-600 hover:bg-blue-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/quizzes/${quiz.id}/edit`);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    {(user?.role === UserRole.TEACHER || user?.role === UserRole.ADMIN) && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50"
+                        onClick={(e) => handleDeleteQuiz(e, quiz)}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuizClick(quiz);
+                    }}
+                  >
+                    View Details
+                  </Button>
                 </div>
               </Card>
             </div>

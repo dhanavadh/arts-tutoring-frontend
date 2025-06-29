@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { coursesApi } from '@/lib/api/services';
 import { Course } from '@/lib/types';
 import { Card } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import { useToast } from '@/components/ui/toast';
 export default function CoursesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrollingCourseId, setEnrollingCourseId] = useState<number | null>(null);
@@ -34,7 +36,14 @@ export default function CoursesPage() {
   };
 
   const handleEnroll = async (courseId: number) => {
-    if (!user || user.role !== 'student') {
+    // Redirect to login if user is not authenticated
+    if (!user) {
+      toast.error('Please login to enroll in courses');
+      router.push('/login');
+      return;
+    }
+
+    if (user.role !== 'student') {
       toast.error('Only students can enroll in courses');
       return;
     }
@@ -98,6 +107,26 @@ export default function CoursesPage() {
           </Link>
         )}
       </div>
+
+      {/* Notice for non-authenticated users */}
+      {!user && (
+        <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-800 font-medium">Want to enroll in a course?</p>
+              <p className="text-blue-600 text-sm">Create an account or login to start learning!</p>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/login">
+                <Button variant="outline" size="sm">Login</Button>
+              </Link>
+              <Link href="/register">
+                <Button size="sm">Sign Up</Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {courses.length === 0 ? (
         <Card className="p-8 text-center">
@@ -166,12 +195,20 @@ export default function CoursesPage() {
                   </Button>
                 </Link>
                 
-                {user?.role === 'student' && (
+                {/* Enrollment Button Logic */}
+                {!user ? (
+                  <Button
+                    onClick={() => handleEnroll(course.id)}
+                    className="flex-1"
+                  >
+                    Login to Enroll
+                  </Button>
+                ) : user.role === 'student' ? (
                   <Button
                     onClick={() => handleEnroll(course.id)}
                     disabled={
                       enrollingCourseId === course.id ||
-                      (course.maxEnrollments && course.enrollmentCount >= course.maxEnrollments)
+                      Boolean(course.maxEnrollments && course.enrollmentCount >= course.maxEnrollments)
                     }
                     className="flex-1"
                   >
@@ -181,6 +218,14 @@ export default function CoursesPage() {
                       ? 'Full'
                       : 'Enroll'
                     }
+                  </Button>
+                ) : (
+                  <Button
+                    disabled
+                    className="flex-1"
+                    variant="outline"
+                  >
+                    {user.role === 'teacher' ? 'Teachers cannot enroll' : 'Login as student to enroll'}
                   </Button>
                 )}
               </div>

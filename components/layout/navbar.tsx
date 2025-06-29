@@ -24,28 +24,33 @@ export const Navbar: React.FC = () => {
               Arts Tutor Platform
             </Link>
 
-            {isAuthenticated && (
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link href="/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Dashboard
-                </Link>
+            <div className="ml-10 flex items-baseline space-x-4">
+              {/* Public navigation - always visible */}
+              <Link href="/courses" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                Courses
+              </Link>
+              <Link href="/teachers" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                Teachers
+              </Link>
+              <Link href="/articles" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                Articles
+              </Link>
 
-                <StudentOnly>
-                  <Link href="/book-session" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                    Book Session
+              {/* Authenticated navigation */}
+              {isAuthenticated && (
+                <>
+                  <Link href="/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    Dashboard
                   </Link>
-                  <Link href="/quizzes" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                    My Quizzes
-                  </Link>
-                </StudentOnly>
 
-                <Link href="/articles" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Articles
-                </Link>
-
-                <Link href="/courses" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Courses
-                </Link>
+                  <StudentOnly>
+                    <Link href="/book-session" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                      Book Session
+                    </Link>
+                    <Link href="/quizzes" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                      My Quizzes
+                    </Link>
+                  </StudentOnly>
 
                 <TeacherOnly>
                   <Link href="/availability" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
@@ -67,8 +72,9 @@ export const Navbar: React.FC = () => {
                     All Quizzes
                   </Link>
                 </AdminOnly>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">

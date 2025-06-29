@@ -102,7 +102,7 @@ export const StudentDashboard: React.FC = () => {
                     <div>
                       <p className="font-medium">{enrollment.course.title}</p>
                       <p className="text-sm text-gray-600">
-                        {enrollment.progressPercentage.toFixed(1)}% complete
+                        {Number(enrollment.progressPercentage || 0).toFixed(1)}% complete
                       </p>
                       <p className="text-sm text-gray-500 capitalize">
                         {enrollment.status.replace('_', ' ')}

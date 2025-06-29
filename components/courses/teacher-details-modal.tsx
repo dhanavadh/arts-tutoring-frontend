@@ -37,7 +37,7 @@ export function TeacherDetailsModal({ teacher, isOpen, onClose }: TeacherDetails
             <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
               {teacher.user.profileImage ? (
                 <img
-                  src={getProfileImageUrl(teacher.user.profileImage)}
+                  src={getProfileImageUrl(teacher.user.profileImage) || ''}
                   alt={`${teacher.user.firstName} ${teacher.user.lastName}`}
                   className="w-24 h-24 rounded-full object-cover"
                   onError={(e) => {
@@ -93,6 +93,21 @@ export function TeacherDetailsModal({ teacher, isOpen, onClose }: TeacherDetails
                 <span>{teacher.user.phone}</span>
               </div>
             )}
+            {teacher.user.websiteUrl && (
+              <div className="flex items-center text-sm">
+                <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <a 
+                  href={teacher.user.websiteUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  Line Profile
+                </a>
+              </div>
+            )}
           </div>
         </Card>
 
@@ -141,14 +156,38 @@ export function TeacherDetailsModal({ teacher, isOpen, onClose }: TeacherDetails
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-          <Button 
-            onClick={() => {
-              window.location.href = `mailto:${teacher.user.email}`;
-            }}
-          >
-            <Mail className="w-4 h-4 mr-2" />
-            Contact Teacher
-          </Button>
+          {teacher.user.websiteUrl ? (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  window.open(teacher.user.websiteUrl, '_blank', 'noopener,noreferrer');
+                }}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Line Contact
+              </Button>
+              <Button 
+                onClick={() => {
+                  window.location.href = `mailto:${teacher.user.email}`;
+                }}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Email Teacher
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              onClick={() => {
+                window.location.href = `mailto:${teacher.user.email}`;
+              }}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Contact Teacher
+            </Button>
+          )}
         </div>
       </div>
     </Modal>

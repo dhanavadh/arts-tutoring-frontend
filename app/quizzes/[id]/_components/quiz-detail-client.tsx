@@ -83,8 +83,35 @@ export default function QuizDetailClient({ id }: { id: string }) {
           <div>
             <h2 className="text-xl font-semibold mb-2">Quiz Details</h2>
             <p className="text-gray-600 mb-4">{quiz.description}</p>
+            
+            {/* Creator Information */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 text-sm">
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span className="text-gray-700">
+                  Created by: <span className="font-medium">
+                    {quiz.creator ? 
+                      `${quiz.creator.firstName} ${quiz.creator.lastName}` :
+                      quiz.teacher?.user ? 
+                        `${quiz.teacher.user.firstName} ${quiz.teacher.user.lastName}` :
+                        quiz.teacherId ? 'Teacher' : 'Unknown'
+                    }
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm mt-1">
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4a1 1 0 001 1h2a1 1 0 011 1v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9a1 1 0 011-1h2a1 1 0 001-1z" />
+                </svg>
+                <span className="text-gray-500">
+                  {formatDate(quiz.createdAt)}
+                </span>
+              </div>
+            </div>
+            
             <div className="text-sm text-gray-500">
-              <p>Created: {formatDate(quiz.createdAt)}</p>
               <p>Total Points: {quiz.totalPoints}</p>
               <p>Time Limit: {quiz.timeLimit ? `${quiz.timeLimit} minutes` : 'No time limit'}</p>
               <p>Maximum Attempts: {quiz.maxAttempts || 1}</p>
@@ -101,12 +128,14 @@ export default function QuizDetailClient({ id }: { id: string }) {
               >
                 Assign to Students
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/quizzes/${quiz.id}/edit`)}
-              >
-                Edit Quiz
-              </Button>
+              {user?.role === 'teacher' && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/quizzes/${quiz.id}/edit`)}
+                >
+                  Edit Quiz
+                </Button>
+              )}
               {!quiz.isPublished && (
                 <Button
                   className="bg-green-600 hover:bg-green-700 text-white"

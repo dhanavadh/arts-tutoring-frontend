@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { coursesApi } from '@/lib/api/services';
 import { Course } from '@/lib/types';
@@ -17,6 +17,7 @@ export default function CourseDetailPage() {
   const params = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const courseId = parseInt(params.id as string);
   
   const [course, setCourse] = useState<Course | null>(null);
@@ -52,7 +53,14 @@ export default function CourseDetailPage() {
   };
 
   const handleEnroll = async () => {
-    if (!user || user.role !== 'student') {
+    // Redirect to login if user is not authenticated
+    if (!user) {
+      toast.error('Please login to enroll in courses');
+      router.push('/login');
+      return;
+    }
+
+    if (user.role !== 'student') {
       toast.error('Only students can enroll in courses');
       return;
     }

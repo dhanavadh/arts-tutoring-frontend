@@ -148,12 +148,12 @@ export default function MyEnrollmentsPage() {
 
                 <div className="text-right min-w-[150px]">
                   <div className="text-2xl font-bold mb-2">
-                    {enrollment.progressPercentage.toFixed(1)}%
+                    {Number(enrollment.progressPercentage || 0).toFixed(1)}%
                   </div>
                   <div className="w-32 bg-gray-200 rounded-full h-3 mb-2">
                     <div
-                      className={`h-3 rounded-full ${getProgressBarColor(enrollment.progressPercentage)}`}
-                      style={{ width: `${enrollment.progressPercentage}%` }}
+                      className={`h-3 rounded-full ${getProgressBarColor(Number(enrollment.progressPercentage || 0))}`}
+                      style={{ width: `${Number(enrollment.progressPercentage || 0)}%` }}
                     />
                   </div>
                   <div className="text-sm text-gray-600">Progress</div>
@@ -201,7 +201,7 @@ export default function MyEnrollmentsPage() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {Math.round(enrollments.reduce((sum, e) => sum + e.progressPercentage, 0) / enrollments.length) || 0}%
+                {Math.round(enrollments.reduce((sum, e) => sum + Number(e.progressPercentage || 0), 0) / enrollments.length) || 0}%
               </div>
               <div className="text-sm text-gray-600">Avg Progress</div>
             </div>

@@ -383,11 +383,45 @@ export default function QuizDetailClient({ id }: { id: string }) {
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold text-sm">
-                            {assignment.student?.user?.firstName?.[0] || '?'}
-                            {assignment.student?.user?.lastName?.[0] || '?'}
-                          </span>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                          {(() => {
+                            const profileImage = assignment.student?.user?.profileImage;
+                            
+                            if (profileImage && profileImage.trim() !== '') {
+                              // Construct full URL - handle both relative and absolute URLs
+                              let imageUrl = profileImage;
+                              if (!profileImage.startsWith('http')) {
+                                imageUrl = `http://localhost:3001/uploads/profiles/${profileImage}`;
+                              }
+                              
+                              return (
+                                <img
+                                  src={imageUrl}
+                                  alt={`${assignment.student.user.firstName} ${assignment.student.user.lastName}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    // Fallback to initials if image fails to load
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.className = 'w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center';
+                                      parent.innerHTML = `<span class="text-blue-600 font-semibold text-sm">${assignment.student?.user?.firstName?.[0] || '?'}${assignment.student?.user?.lastName?.[0] || '?'}</span>`;
+                                    }
+                                  }}
+                                />
+                              );
+                            } else {
+                              return (
+                                <div className="w-full h-full bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-blue-600 font-semibold text-sm">
+                                    {assignment.student?.user?.firstName?.[0] || '?'}
+                                    {assignment.student?.user?.lastName?.[0] || '?'}
+                                  </span>
+                                </div>
+                              );
+                            }
+                          })()}
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">
@@ -473,12 +507,14 @@ export default function QuizDetailClient({ id }: { id: string }) {
 
           {(user?.role === 'admin' || user?.role === 'teacher') && (
             <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/quizzes/${quiz.id}/edit`)}
-              >
-                Edit Quiz
-              </Button>
+              {user?.role === 'teacher' && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/quizzes/${quiz.id}/edit`)}
+                >
+                  Edit Quiz
+                </Button>
+              )}
               {(quiz.status === 'draft' || quiz.status === 'published') && (
                 <Button
                   className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -653,10 +689,44 @@ export default function QuizDetailClient({ id }: { id: string }) {
               {/* Student Info */}
               <div className="border-b pb-4">
                 <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-bold text-lg">
-                      {selectedStudentModal.student.user.firstName[0]}{selectedStudentModal.student.user.lastName[0]}
-                    </span>
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden">
+                    {(() => {
+                      const profileImage = selectedStudentModal.student.user.profileImage;
+                      
+                      if (profileImage && profileImage.trim() !== '') {
+                        // Construct full URL - handle both relative and absolute URLs
+                        let imageUrl = profileImage;
+                        if (!profileImage.startsWith('http')) {
+                          imageUrl = `http://localhost:3001/uploads/profiles/${profileImage}`;
+                        }
+                        
+                        return (
+                          <img
+                            src={imageUrl}
+                            alt={`${selectedStudentModal.student.user.firstName} ${selectedStudentModal.student.user.lastName}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to initials if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.className = 'w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center';
+                                parent.innerHTML = `<span class="text-blue-600 font-bold text-lg">${selectedStudentModal.student.user.firstName[0]}${selectedStudentModal.student.user.lastName[0]}</span>`;
+                              }
+                            }}
+                          />
+                        );
+                      } else {
+                        return (
+                          <div className="w-full h-full bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-bold text-lg">
+                              {selectedStudentModal.student.user.firstName[0]}{selectedStudentModal.student.user.lastName[0]}
+                            </span>
+                          </div>
+                        );
+                      }
+                    })()}
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">
@@ -728,15 +798,32 @@ export default function QuizDetailClient({ id }: { id: string }) {
                     className="bg-red-600 hover:bg-red-700 text-white"
                     onClick={async () => {
                       try {
-                        await quizzesService.removeQuizAssignment(quiz!.id, selectedStudentModal.student.id);
-                        // Refresh assignments
-                        const updatedAssignments = await quizzesService.getQuizAssignments(quiz!.id);
+                        const result = await quizzesService.removeQuizAssignment(quiz!.id, selectedStudentModal.student.id);
+                        
+                        // Refresh both assignments and quiz data (quiz status might have changed)
+                        const [updatedAssignments, updatedQuiz] = await Promise.all([
+                          quizzesService.getQuizAssignments(quiz!.id),
+                          quizzesService.getQuizById(quiz!.id)
+                        ]);
+                        
                         setAssignments(updatedAssignments || []);
+                        setQuiz(updatedQuiz);
                         setSelectedStudentModal(null);
-                        addToast({
-                          type: 'success',
-                          message: `Unassigned ${selectedStudentModal.student.user.firstName} ${selectedStudentModal.student.user.lastName} from quiz`
-                        });
+                        
+                        // Show appropriate message based on result
+                        if (result.message.includes('automatically unpublished')) {
+                          addToast({
+                            type: 'warning',
+                            title: 'Student Unassigned & Quiz Unpublished',
+                            message: `${selectedStudentModal.student.user.firstName} ${selectedStudentModal.student.user.lastName} was unassigned. Quiz has been automatically unpublished since no students remain.`,
+                            duration: 6000
+                          });
+                        } else {
+                          addToast({
+                            type: 'success',
+                            message: `Unassigned ${selectedStudentModal.student.user.firstName} ${selectedStudentModal.student.user.lastName} from quiz`
+                          });
+                        }
                       } catch (err) {
                         addToast({
                           type: 'error',
