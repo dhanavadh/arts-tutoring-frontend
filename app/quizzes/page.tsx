@@ -363,6 +363,21 @@ function TeacherQuizDashboard() {
   const { addToast } = useToast();
   const router = useRouter();
 
+  // Check if current user can edit/delete a quiz
+  const canEditQuiz = (quiz: Quiz): boolean => {
+    if (!user) return false;
+    
+    if (user.role === UserRole.TEACHER) {
+      // Teachers can edit quizzes they created (check teacherId)
+      return quiz.teacherId === user.id || quiz.createdBy === user.id;
+    } else if (user.role === UserRole.ADMIN) {
+      // Admins can only edit quizzes they created themselves
+      return quiz.createdBy === user.id;
+    }
+    
+    return false;
+  };
+
   const handleDeleteQuiz = async (e: React.MouseEvent, quiz: Quiz) => {
     e.stopPropagation();
     console.log('Opening delete modal for quiz:', quiz.title); // Debug log
@@ -629,7 +644,7 @@ function TeacherQuizDashboard() {
 
                 <div className="flex justify-between items-center pt-2 border-t">
                   <div className="flex gap-2">
-                    {user?.role === UserRole.TEACHER && (
+                    {canEditQuiz(quiz) && (
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -642,7 +657,7 @@ function TeacherQuizDashboard() {
                         Edit
                       </Button>
                     )}
-                    {(user?.role === UserRole.TEACHER || user?.role === UserRole.ADMIN) && (
+                    {canEditQuiz(quiz) && (
                       <Button 
                         variant="outline" 
                         size="sm"

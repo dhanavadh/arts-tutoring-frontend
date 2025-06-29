@@ -34,6 +34,21 @@ export default function QuizDetailClient({ id }: { id: string }) {
   const { addToast } = useToast();
   const router = useRouter();
 
+  // Check if current user can edit this quiz
+  const canEditQuiz = (quiz: Quiz): boolean => {
+    if (!user || !quiz) return false;
+    
+    if (user.role === 'teacher') {
+      // Teachers can edit quizzes they created
+      return quiz.createdBy === user.id;
+    } else if (user.role === 'admin') {
+      // Admins can only edit quizzes they created themselves
+      return quiz.createdBy === user.id;
+    }
+    
+    return false;
+  };
+
   useEffect(() => {
     const fetchQuizData = async () => {
       try {
@@ -507,7 +522,7 @@ export default function QuizDetailClient({ id }: { id: string }) {
 
           {(user?.role === 'admin' || user?.role === 'teacher') && (
             <div className="flex gap-2 justify-end">
-              {user?.role === 'teacher' && (
+              {canEditQuiz(quiz) && (
                 <Button
                   variant="outline"
                   onClick={() => router.push(`/quizzes/${quiz.id}/edit`)}
@@ -657,7 +672,7 @@ export default function QuizDetailClient({ id }: { id: string }) {
         )}
       </div>
 
-      {user?.role === 'teacher' && (
+      {(user?.role === 'teacher' || user?.role === 'admin') && (
         <div className="mt-8">
           <h2 className="text-2xl font-semibold mb-4">Assignments</h2>
           {quiz.assignments && quiz.assignments.length > 0 ? (
