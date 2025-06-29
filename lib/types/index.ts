@@ -40,10 +40,16 @@ export interface Teacher {
   id: number;
   userId: number;
   user: User;
-  subjects: string[];
+  subject: string;
+  hourlyRate: number;
+  bio?: string;
+  yearsExperience: number;
+  isVerified: boolean;
+  availabilitySchedule?: any;
+  // Legacy fields for backwards compatibility
+  subjects?: string[];
   qualifications?: string;
   experience?: string;
-  hourlyRate?: number;
   availability?: string;
   createdAt: string;
   updatedAt: string;
@@ -391,4 +397,107 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+// Course types
+export type CourseStatus = 'draft' | 'published' | 'archived';
+export type CourseLevel = 'beginner' | 'intermediate' | 'advanced';
+export type EnrollmentStatus = 'enrolled' | 'completed' | 'dropped' | 'in_progress';
+
+// Course enums for easier usage in forms
+export enum CourseLevelEnum {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced',
+}
+
+export enum CourseStatusEnum {
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
+  ARCHIVED = 'archived',
+}
+
+export enum EnrollmentStatusEnum {
+  ENROLLED = 'enrolled',
+  COMPLETED = 'completed',
+  DROPPED = 'dropped',
+  IN_PROGRESS = 'in_progress',
+}
+
+export interface Course {
+  id: number;
+  title: string;
+  description: string;
+  content?: string;
+  featuredImage?: string;
+  status: CourseStatus;
+  level: CourseLevel;
+  category: string;
+  tags?: string[];
+  estimatedDuration?: number;
+  price: number;
+  maxEnrollments?: number;
+  enrollmentCount: number;
+  viewCount: number;
+  isFeatured: boolean;
+  publishedAt?: string;
+  teacherId: number;
+  teacher: Teacher;
+  enrollments?: CourseEnrollment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseEnrollment {
+  id: number;
+  courseId: number;
+  studentId: number;
+  status: EnrollmentStatus;
+  enrolledAt: string;
+  completedAt?: string;
+  progressPercentage: number;
+  notes?: string;
+  course: Course;
+  student: Student;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCourseDto {
+  title: string;
+  description: string;
+  content?: string;
+  featuredImage?: string;
+  status?: CourseStatus;
+  level: CourseLevel;
+  category: string;
+  tags?: string[];
+  estimatedDuration?: number;
+  price?: number;
+  maxEnrollments?: number;
+  isFeatured?: boolean;
+}
+
+export interface UpdateCourseDto {
+  title?: string;
+  description?: string;
+  content?: string;
+  featuredImage?: string;
+  status?: CourseStatus;
+  level?: CourseLevel;
+  category?: string;
+  tags?: string[];
+  estimatedDuration?: number;
+  price?: number;
+  maxEnrollments?: number;
+  isFeatured?: boolean;
+}
+
+export interface PublishCourseDto {
+  status: CourseStatus;
+}
+
+export interface EnrollCourseDto {
+  courseId: number;
+  notes?: string;
 }

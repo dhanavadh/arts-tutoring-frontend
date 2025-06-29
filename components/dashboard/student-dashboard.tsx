@@ -5,7 +5,7 @@ import { Card, CardBody, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { LoadingSpinner } from '../ui/loading';
 import { api } from '../../lib/api';
-import { Booking, QuizAssignment } from '../../lib/types';
+import { Booking, QuizAssignment, CourseEnrollment } from '../../lib/types';
 import BookingStatsWidget from '../bookings/booking-stats-widget';
 import UpcomingBookingsWidget from '../bookings/upcoming-bookings-widget';
 import QuickActionsWidget from '../bookings/quick-actions-widget';
@@ -13,6 +13,7 @@ import QuickActionsWidget from '../bookings/quick-actions-widget';
 export const StudentDashboard: React.FC = () => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [assignedQuizzes, setAssignedQuizzes] = useState<QuizAssignment[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<CourseEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -23,9 +24,10 @@ export const StudentDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [bookingsResponse, quizzesResponse] = await Promise.allSettled([
+      const [bookingsResponse, quizzesResponse, coursesResponse] = await Promise.allSettled([
         api.bookings.getUpcomingBookings(),
         api.quizzes.getAssignedQuizzes(),
+        api.courses.getMyEnrollments(),
       ]);
 
       if (bookingsResponse.status === 'fulfilled') {
@@ -36,6 +38,11 @@ export const StudentDashboard: React.FC = () => {
       if (quizzesResponse.status === 'fulfilled') {
         const quizzesData = quizzesResponse.value || [];
         setAssignedQuizzes(Array.isArray(quizzesData) ? quizzesData : []);
+      }
+
+      if (coursesResponse.status === 'fulfilled') {
+        const coursesData = coursesResponse.value || [];
+        setEnrolledCourses(Array.isArray(coursesData) ? coursesData : []);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
@@ -71,9 +78,42 @@ export const StudentDashboard: React.FC = () => {
         <QuickActionsWidget userRole="student" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Enhanced Upcoming Bookings */}
         <UpcomingBookingsWidget userRole="student" limit={3} />
+
+        {/* Enrolled Courses */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">My Courses</h2>
+              <Button size="sm" variant="outline">
+                <a href="/courses/my-enrollments">View All</a>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardBody>
+            {!enrolledCourses || enrolledCourses.length === 0 ? (
+              <p className="text-gray-500">No enrolled courses</p>
+            ) : (
+              <div className="space-y-3">
+                {enrolledCourses.slice(0, 3).map((enrollment) => (
+                  <div key={enrollment.id} className="border-l-4 border-blue-500 pl-4 py-2">
+                    <div>
+                      <p className="font-medium">{enrollment.course.title}</p>
+                      <p className="text-sm text-gray-600">
+                        {enrollment.progressPercentage.toFixed(1)}% complete
+                      </p>
+                      <p className="text-sm text-gray-500 capitalize">
+                        {enrollment.status.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardBody>
+        </Card>
 
         {/* Assigned Quizzes */}
         <Card>
@@ -119,7 +159,7 @@ export const StudentDashboard: React.FC = () => {
           <h2 className="text-lg font-semibold">More Actions</h2>
         </CardHeader>
         <CardBody>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Button className="h-20 flex-col" variant="outline">
               <a href="/articles" className="flex flex-col items-center">
                 <span className="text-2xl mb-2">📚</span>
@@ -136,6 +176,12 @@ export const StudentDashboard: React.FC = () => {
               <a href="/quizzes" className="flex flex-col items-center">
                 <span className="text-2xl mb-2">✏️</span>
                 Take Quiz
+              </a>
+            </Button>
+            <Button className="h-20 flex-col" variant="outline">
+              <a href="/courses" className="flex flex-col items-center">
+                <span className="text-2xl mb-2">🎓</span>
+                Browse Courses
               </a>
             </Button>
             <Button className="h-20 flex-col" variant="outline">

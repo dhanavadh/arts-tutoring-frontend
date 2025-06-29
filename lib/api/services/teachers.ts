@@ -38,6 +38,11 @@ export class TeachersService {
     const response = await apiClient.get<Teacher>(`${this.endpoint}/me`);
     return response.data;
   }
+
+  async updateMyProfile(teacherData: UpdateTeacherDto): Promise<Teacher> {
+    const response = await apiClient.patch<Teacher>(`${this.endpoint}/me`, teacherData);
+    return response.data;
+  }
 }
 
 export const teachersService = new TeachersService();

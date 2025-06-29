@@ -5,7 +5,7 @@ import { Card, CardBody, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { LoadingSpinner } from '../ui/loading';
 import { api } from '../../lib/api';
-import { Booking, Article, Quiz } from '../../lib/types';
+import { Booking, Article, Quiz, Course } from '../../lib/types';
 import BookingStatsWidget from '../bookings/booking-stats-widget';
 import UpcomingBookingsWidget from '../bookings/upcoming-bookings-widget';
 import QuickActionsWidget from '../bookings/quick-actions-widget';
@@ -14,6 +14,7 @@ export const TeacherDashboard: React.FC = () => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [recentArticles, setRecentArticles] = useState<Article[]>([]);
   const [recentQuizzes, setRecentQuizzes] = useState<Quiz[]>([]);
+  const [recentCourses, setRecentCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -24,10 +25,11 @@ export const TeacherDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [scheduleResponse, articlesResponse, quizzesResponse] = await Promise.allSettled([
+      const [scheduleResponse, articlesResponse, quizzesResponse, coursesResponse] = await Promise.allSettled([
         api.bookings.getMySchedule({ limit: 5 }),
         api.articles.getMyArticles(),
         api.quizzes.getMyQuizzes(),
+        api.courses.getMyCourses(),
       ]);
 
       if (scheduleResponse.status === 'fulfilled') {
@@ -43,6 +45,11 @@ export const TeacherDashboard: React.FC = () => {
       if (quizzesResponse.status === 'fulfilled') {
         const quizzesData = quizzesResponse.value || [];
         setRecentQuizzes(Array.isArray(quizzesData) ? quizzesData.slice(0, 3) : []);
+      }
+
+      if (coursesResponse.status === 'fulfilled') {
+        const coursesData = coursesResponse.value || [];
+        setRecentCourses(Array.isArray(coursesData) ? coursesData.slice(0, 3) : []);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
@@ -78,9 +85,42 @@ export const TeacherDashboard: React.FC = () => {
         <QuickActionsWidget userRole="teacher" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Enhanced Today's Schedule */}
         <UpcomingBookingsWidget userRole="teacher" limit={5} />
+
+        {/* Recent Courses */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">My Courses</h2>
+              <Button size="sm" variant="outline">
+                <a href="/courses/my-courses">Manage</a>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardBody>
+            {!recentCourses || recentCourses.length === 0 ? (
+              <p className="text-gray-500">No courses yet</p>
+            ) : (
+              <div className="space-y-3">
+                {recentCourses.map((course) => (
+                  <div key={course.id} className="border-l-4 border-blue-500 pl-4 py-2">
+                    <div>
+                      <p className="font-medium">{course.title}</p>
+                      <p className="text-sm text-gray-600 capitalize">
+                        {course.status}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {course.enrollmentCount} enrolled
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardBody>
+        </Card>
 
         {/* Recent Articles */}
         <Card>
@@ -155,7 +195,7 @@ export const TeacherDashboard: React.FC = () => {
           <h2 className="text-lg font-semibold">Content & Tools</h2>
         </CardHeader>
         <CardBody>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Button className="h-20 flex-col">
               <a href="/articles/new" className="flex flex-col items-center">
                 <span className="text-2xl mb-2">✍️</span>
@@ -166,6 +206,12 @@ export const TeacherDashboard: React.FC = () => {
               <a href="/quizzes/create" className="flex flex-col items-center">
                 <span className="text-2xl mb-2">📝</span>
                 Create Quiz
+              </a>
+            </Button>
+            <Button className="h-20 flex-col" variant="outline">
+              <a href="/courses/create" className="flex flex-col items-center">
+                <span className="text-2xl mb-2">🎓</span>
+                Create Course
               </a>
             </Button>
             <Button className="h-20 flex-col" variant="outline">

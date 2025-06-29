@@ -43,6 +43,10 @@ export const Navbar: React.FC = () => {
                   Articles
                 </Link>
 
+                <Link href="/courses" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                  Courses
+                </Link>
+
                 <TeacherOnly>
                   <Link href="/availability" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                     Availability
@@ -78,7 +82,8 @@ export const Navbar: React.FC = () => {
                   alt="Profile Picture"
                   width={40}
                   height={40}
-                  className="rounded-full"
+                  className="rounded-full object-cover"
+                  style={{ width: '40px', height: '40px' }}
                   unoptimized={true}
                   onError={(e) => {
                     // Fallback to default image on error

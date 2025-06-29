@@ -52,11 +52,28 @@ export function useToast() {
   if (!context) {
     throw new Error('useToast must be used within a ToastProvider');
   }
+  
+  const toast = {
+    success: (message: string, title?: string) => context.addToast({ message, title, type: 'success' }),
+    error: (message: string, title?: string) => context.addToast({ message, title, type: 'error' }),
+    warning: (message: string, title?: string) => context.addToast({ message, title, type: 'warning' }),
+    info: (message: string, title?: string) => context.addToast({ message, title, type: 'info' }),
+  };
+  
+  return { ...context, toast };
+}
+
+// Helper hook for internal use without toast methods
+function useToastInternal() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
   return context;
 }
 
 function ToastContainer() {
-  const { toasts, removeToast } = useToast();
+  const { toasts, removeToast } = useToastInternal();
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">

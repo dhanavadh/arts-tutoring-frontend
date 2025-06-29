@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/contexts/auth-context';
 import { authService } from '../../lib/api/services/auth';
 import { uploadsService } from '../../lib/api/services/uploads';
+import { teachersService } from '../../lib/api/services/teachers';
 import { apiClient } from '../../lib/api/client';
 import { API_CONFIG } from '../../lib/api/config';
 import { getProtectedImageUrl } from '../../lib/api/image-utils';
@@ -97,8 +98,8 @@ export const Profile: React.FC = () => {
       try {
         const profile = await authService.getProfile();
         
-        // Map User to ProfileData with proper type handling
-        const mappedProfile: ProfileData = {
+        // Initialize the mapped profile with user data
+        let mappedProfile: ProfileData = {
           id: profile.id,
           email: profile.email,
           firstName: profile.firstName,
@@ -111,18 +112,38 @@ export const Profile: React.FC = () => {
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt,
           
-          // Teacher/Student specific fields with defaults
-          subject: (profile as any).subject || '',
-          hourlyRate: (profile as any).hourlyRate || 0,
-          bio: (profile as any).bio || '',
-          yearsExperience: (profile as any).yearsExperience || 0,
-          qualifications: (profile as any).qualifications || '',
-          gradeLevel: (profile as any).gradeLevel || '',
-          school: (profile as any).school || '',
-          parentEmail: (profile as any).parentEmail || '',
-          parentPhone: (profile as any).parentPhone || '',
-          learningGoals: (profile as any).learningGoals || ''
+          // Default values for role-specific fields
+          subject: '',
+          hourlyRate: 0,
+          bio: '',
+          yearsExperience: 0,
+          qualifications: '',
+          gradeLevel: '',
+          school: '',
+          parentEmail: '',
+          parentPhone: '',
+          learningGoals: ''
         };
+        
+        // If user is a teacher, fetch teacher-specific data
+        if (profile.role === 'teacher') {
+          try {
+            const teacherProfile = await teachersService.getMyProfile();
+            mappedProfile = {
+              ...mappedProfile,
+              subject: teacherProfile.subject || '',
+              hourlyRate: teacherProfile.hourlyRate || 0,
+              bio: teacherProfile.bio || '',
+              yearsExperience: teacherProfile.yearsExperience || 0,
+              qualifications: '' // teacher entity doesn't have this field as string
+            };
+          } catch (teacherError) {
+            console.log('Failed to load teacher profile:', teacherError);
+          }
+        }
+        
+        // TODO: Add student profile fetching if needed
+        // if (profile.role === 'student') { ... }
         
         setProfileData(mappedProfile);
         // Ensure all form fields have default values to prevent controlled/uncontrolled warnings
@@ -218,71 +239,68 @@ export const Profile: React.FC = () => {
       setSaving(true);
       setError('');
       
-      // Extract only the fields we want to update, excluding nested objects and read-only fields
-      const updateData = {
+      // Separate user profile fields from role-specific fields
+      const userProfileData = {
         firstName: editForm.firstName,
         lastName: editForm.lastName,
         phone: editForm.phone,
-        profileImage: editForm.profileImage,
-        // Add role-specific fields if they exist
-        ...(editForm.subject && { subject: editForm.subject }),
-        ...(editForm.qualifications && { qualifications: editForm.qualifications }),
-        ...(editForm.yearsExperience && { yearsExperience: editForm.yearsExperience }),
-        ...(editForm.hourlyRate && { hourlyRate: editForm.hourlyRate }),
-        ...(editForm.bio && { bio: editForm.bio }),
-        ...(editForm.gradeLevel && { gradeLevel: editForm.gradeLevel }),
-        ...(editForm.school && { school: editForm.school }),
-        ...(editForm.parentEmail && { parentEmail: editForm.parentEmail }),
-        ...(editForm.parentPhone && { parentPhone: editForm.parentPhone }),
-        ...(editForm.learningGoals && { learningGoals: editForm.learningGoals })
+        profileImage: editForm.profileImage
       };
       
-      // Remove any undefined values
-      Object.keys(updateData).forEach(key => {
-        if ((updateData as any)[key] === undefined || (updateData as any)[key] === null) {
-          delete (updateData as any)[key];
+      // Remove any undefined values from user profile data
+      Object.keys(userProfileData).forEach(key => {
+        if ((userProfileData as any)[key] === undefined || (userProfileData as any)[key] === null) {
+          delete (userProfileData as any)[key];
         }
       });
       
-      console.log('Saving profile data:', updateData);
+      console.log('Saving user profile data:', userProfileData);
       
-      const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.USERS}/profile`, updateData);
+      // Update user profile
+      const userResponse = await apiClient.patch(`${API_CONFIG.ENDPOINTS.USERS}/profile`, userProfileData);
       
-      console.log('Profile save response:', response);
-      
-      if (response.success) {
-        const updatedProfile = response.data as ProfileData;
-        setProfileData(updatedProfile);
-        setUser(updatedProfile as any);
+      // Update role-specific data if user is a teacher
+      if (user?.role === 'teacher') {
+        const teacherData: any = {};
         
-        // Update edit form with proper default values
-        setEditForm({
-          ...updatedProfile,
-          firstName: updatedProfile.firstName || '',
-          lastName: updatedProfile.lastName || '',
-          phone: updatedProfile.phone || '',
-          profileImage: updatedProfile.profileImage || '',
-          subject: updatedProfile.subject || '',
-          qualifications: updatedProfile.qualifications || '',
-          yearsExperience: updatedProfile.yearsExperience || 0,
-          hourlyRate: updatedProfile.hourlyRate || 0,
-          bio: updatedProfile.bio || '',
-          gradeLevel: updatedProfile.gradeLevel || '',
-          school: updatedProfile.school || '',
-          parentEmail: updatedProfile.parentEmail || '',
-          parentPhone: updatedProfile.parentPhone || '',
-          learningGoals: updatedProfile.learningGoals || ''
-        });
+        // Only add fields that have valid values
+        if (editForm.subject && editForm.subject.trim()) {
+          teacherData.subject = editForm.subject.trim();
+        }
         
-        setEditing(false);
+        if (editForm.yearsExperience !== undefined && editForm.yearsExperience >= 0) {
+          teacherData.yearsExperience = editForm.yearsExperience;
+        }
         
-        // Show success message
-        addToast({
-          type: 'success',
-          title: 'Profile Updated',
-          message: 'Your profile has been updated successfully!'
-        });
+        if (editForm.hourlyRate !== undefined) {
+          teacherData.hourlyRate = editForm.hourlyRate;
+        }
+        
+        if (editForm.bio && editForm.bio.trim()) {
+          teacherData.bio = editForm.bio.trim();
+        }
+        
+        if (Object.keys(teacherData).length > 0) {
+          console.log('Saving teacher profile data:', teacherData);
+          await teachersService.updateMyProfile(teacherData);
+        }
       }
+      
+      // TODO: Add student profile update logic if needed
+      // if (user?.role === 'student' && user?.student?.id) { ... }
+      
+      // Reload the complete profile data to get both user and role-specific updates
+      console.log('Both profile updates completed, reloading profile data...');
+      await loadProfile();
+      
+      setEditing(false);
+      
+      // Show success message
+      addToast({
+        type: 'success',
+        title: 'Profile Updated',
+        message: 'Your profile has been updated successfully!'
+      });
     } catch (err: any) {
       console.error('Profile save error:', err);
       setError(err.message || 'Failed to update profile');

@@ -8,6 +8,7 @@ import { adminService, AdminService } from './admin';
 import { studentsService, StudentsService } from './students';
 import { teachersService, TeachersService } from './teachers';
 import { uploadsService, UploadsService } from './uploads';
+import { coursesApi } from './courses';
 
 // Export all API services
 export { authService, AuthService };
@@ -19,6 +20,7 @@ export { adminService, AdminService };
 export { studentsService, StudentsService };
 export { teachersService, TeachersService };
 export { uploadsService, UploadsService };
+export { coursesApi };
 
 // Create a combined API object for easy access
 export const api = {
@@ -31,4 +33,5 @@ export const api = {
   students: studentsService,
   teachers: teachersService,
   uploads: uploadsService,
+  courses: coursesApi,
 };
